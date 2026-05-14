@@ -3,7 +3,7 @@
  * Este script deve ser publicado como "Web App" com acesso "Anyone" (ou restrito ao domínio).
  */
 
-const FOLDER_ID = "ID_DA_SUA_PASTA_NO_DRIVE"; // Substitua pelo ID da pasta onde ficarão os comprovantes
+const FOLDER_ID = "1xCYLKGD8BnIuwU851MQhPI48dUOYWb-7"; // Pasta: Comprovantes 2026
 
 function doPost(e) {
   try {

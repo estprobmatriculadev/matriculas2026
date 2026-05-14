@@ -3,10 +3,8 @@ import {
   doc, 
   runTransaction, 
   serverTimestamp, 
-  collection, 
-  getDoc
+  collection
 } from "firebase/firestore";
-import { normalizarString } from "./userService";
 import { triggerGerarComprovante } from "./appsScriptBridge";
 
 export interface RegistrationData {
@@ -14,7 +12,8 @@ export interface RegistrationData {
   cursistaNome: string;
   turmaId: string;
   fluxo: "EP" | "PEDFOR";
-  EstabExeNome?: string; // Para cota PEDFOR
+  EstabExeNome?: string;
+  vinculoOrigem?: string; // Adicionado para corrigir o erro de build
   anoFormativo?: string;
   diaSemana?: string;
   horarioIni?: string;
@@ -24,10 +23,6 @@ export interface RegistrationData {
 export const efetivarMatricula = async (data: RegistrationData) => {
   try {
     const result = await runTransaction(db, async (transaction) => {
-      // 1. Verificar se já existe matrícula para este fluxo
-      // (Para simplificar, usamos o email como ID parcial ou verificamos via query antes)
-      // Aqui vamos focar na reserva de vaga
-      
       const turmaRef = doc(db, "turmas", data.turmaId);
       const turmaDoc = await transaction.get(turmaRef);
 
@@ -40,7 +35,6 @@ export const efetivarMatricula = async (data: RegistrationData) => {
         throw new Error("Não há vagas disponíveis para esta turma.");
       }
 
-      // 2. Criar registro de matrícula
       const matriculaRef = doc(collection(db, "matriculas"));
       transaction.set(matriculaRef, {
         ...data,
@@ -49,7 +43,6 @@ export const efetivarMatricula = async (data: RegistrationData) => {
         status: "CONFIRMADA"
       });
 
-      // 3. Decrementar vaga
       transaction.update(turmaRef, {
         vagas: turmaData.vagas - 1,
         matriculados: (turmaData.matriculados || 0) + 1
@@ -63,7 +56,6 @@ export const efetivarMatricula = async (data: RegistrationData) => {
       };
     });
 
-    // 4. Disparar geração de comprovante em background (Middleware GAS)
     triggerGerarComprovante({
       cursistaNome: data.cursistaNome,
       cursistaEmail: data.cursistaEmail,
