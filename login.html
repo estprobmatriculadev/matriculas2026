@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Login - Estágio Probatório 2026</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#4CAF50",
+                        secondary: "#2E5090",
+                        "background-light": "#F3F4F6",
+                        "background-dark": "#111827",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1F2937",
+                        "text-light": "#1F2937",
+                        "text-dark": "#F9FAFB",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+
+<body
+    class="bg-gradient-to-br from-secondary via-blue-800 to-primary min-h-screen flex items-center justify-center font-body p-4">
+
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-20 left-20 w-72 h-72 bg-primary rounded-full filter blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-20 right-20 w-96 h-96 bg-secondary rounded-full filter blur-3xl animate-pulse"
+            style="animation-delay: 1s;"></div>
+    </div>
+
+    <div class="max-w-md w-full relative z-10">
+        <div
+            class="bg-surface-light dark:bg-surface-dark rounded-2xl shadow-2xl p-8 md:p-10 border border-gray-100 dark:border-gray-700">
+            <!-- Logo/Header -->
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <img src="https://estagioprobatorio.free.nf/images/logo.png" alt="Logo Estágio Probatório"
+                        class="h-20 w-auto">
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    <span class="text-primary">Estágio</span>
+                    <span class="text-secondary">Probatório</span>
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Sistema de Matrícula 2026</p>
+            </div>
+
+            <!-- Message Area -->
+            <div id="messageArea" class="hidden mb-6"></div>
+
+            <!-- Login Card -->
+            <div class="space-y-6">
+                <div class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-primary/20">
+                    <div class="flex items-start gap-3 mb-4">
+                        <span class="material-icons-round text-primary text-2xl">info</span>
+                        <div>
+                            <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Acesso Institucional</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Faça login com sua conta Google institucional <strong>@escola.pr.gov.br</strong> para
+                                acessar o sistema de matrícula.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Google Sign In Button -->
+                <button id="loginButton" onclick="handleLogin()"
+                    class="w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-4 px-6 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z"
+                            fill="#4285F4" />
+                        <path
+                            d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z"
+                            fill="#34A853" />
+                        <path
+                            d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49l3.34-2.59z"
+                            fill="#FBBC05" />
+                        <path
+                            d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.695 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.19 5.736 7.395 3.977 10 3.977z"
+                            fill="#EA4335" />
+                    </svg>
+                    <span>Entrar com Google</span>
+                </button>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-400">Verificando suas credenciais...</p>
+                </div>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span class="material-icons-round text-sm">lock</span>
+                    <span>Conexão segura • Dados protegidos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Text -->
+        <div class="mt-6 text-center text-sm text-white/80">
+            <p>Problemas para acessar? Entre em contato com o suporte técnico, preenchendo o formulário:</p>
+            <a href="https://forms.gle/s9TDgZZtFQjpTHGBA" target="_blank"
+                class="font-bold underline hover:text-white transition-colors">Formulário de Suporte Técnico</a>
+        </div>
+    </div>
+
+    <script>
+        // Global configuration injected from server
+        const SCRIPT_URL = '<?= scriptUrl ?>';
+
+        // Check if user is already logged in
+        // Check if user is already logged in
+        window.onload = function () {
+            try {
+                google.script.run
+                    .withSuccessHandler(onLoginSuccess)
+                    .withFailureHandler(onLoginFailure)
+                    .verificarElegibilidade();
+            } catch (e) {
+                console.error('Error initializing login:', e);
+                onLoginFailure(e);
+            }
+        };
+
+        function handleLogin() {
+            showLoading();
+
+            // Trigger Google authentication
+            google.script.run
+                .withSuccessHandler(onLoginSuccess)
+                .withFailureHandler(onLoginFailure)
+                .verificarElegibilidade();
+        }
+
+        function onLoginSuccess(result) {
+            hideLoading();
+            console.log('Login result:', result);
+
+            if (!result) {
+                console.error('Login result is null or undefined');
+                showMessage('error', 'Erro de Conexão',
+                    'O servidor não retornou dados. Verifique sua conexão ou tente novamente mais tarde.');
+                return;
+            }
+
+            if (result.status === 'MANUTENCAO') {
+                showMessage('error', 'Sistema em Manutenção', result.mensagem);
+            } else if (result.status === 'NAO_ENCONTRADO') {
+                showMessage('error', 'Usuário não encontrado',
+                    `<div class="space-y-4">
+                        <p class="font-bold text-base text-red-600 dark:text-red-400">Você é servidor(a) da rede estadual do Paraná e está em período de Estágio Probatório?</p>
+                        <p>Seu cadastro ainda não consta em nossa base. Preencha o formulário abaixo para solicitar sua inclusão:</p>
+                        <a href="https://forms.gle/s9TDgZZtFQjpTHGBA" target="_blank" class="block w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-center transition-colors">
+                            Solicitar Inclusão de Cadastro
+                        </a>
+                        <p class="text-xs italic mt-2 border-t pt-2 border-red-200 dark:border-red-800">Apenas servidores estaduais do Paraná em período de Estágio Probatório podem realizar a matrícula.</p>
+                    </div>`);
+            } else if (result.status === 'JA_MATRICULADO') {
+                showMessage('success', 'Matrícula Já Realizada',
+                    `Olá, <strong>${result.nome}</strong>. Identificamos que você já realizou sua matrícula anteriormente.`,
+                    { text: 'Visualizar Comprovante', action: `window.top.location.href = '${SCRIPT_URL}?page=confirmacao'` }
+                );
+            } else if (result.status === 'ELEGIVEL') {
+                showMessage('success', 'Acesso Permitido',
+                    `Bem-vindo(a), <strong>${result.nome}</strong>. Você está habilitado para realizar sua matrícula.`,
+                    { text: 'Iniciar Matrícula', action: `window.top.location.href = '${SCRIPT_URL}?page=index'` }
+                );
+            } else if (result.status === 'EMAIL_INVALIDO') {
+                showMessage('error', 'Email não autorizado',
+                    `Para acessar este sistema, você deve usar um email institucional <strong>@escola.pr.gov.br</strong>.`);
+            }
+        }
+
+        function onLoginFailure(error) {
+            hideLoading();
+            showMessage('error', 'Erro ao fazer login',
+                `Ocorreu um erro ao processar sua solicitação: ${error.message}. Tente novamente.`);
+        }
+
+        function showLoading() {
+            document.getElementById('loginButton').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loginButton').classList.remove('hidden');
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+
+        function showMessage(type, title, message, actionConfig) {
+            const messageArea = document.getElementById('messageArea');
+            const iconMap = {
+                'success': { icon: 'check_circle', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800', text: 'text-green-800 dark:text-green-200', iconColor: 'text-green-600', btnBg: 'bg-green-600 hover:bg-green-700 text-white' },
+                'error': { icon: 'error', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', text: 'text-red-800 dark:text-red-200', iconColor: 'text-red-600', btnBg: 'bg-red-600 hover:bg-red-700 text-white' }
+            };
+
+            const style = iconMap[type];
+
+            let actionButton = '';
+            if (actionConfig) {
+                actionButton = `
+                    <div class="mt-4">
+                        <button onclick="${actionConfig.action}" class="w-full ${style.btnBg} font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform active:scale-95 duration-200">
+                            <span>${actionConfig.text}</span>
+                            <span class="material-icons-round text-sm">arrow_forward</span>
+                        </button>
+                    </div>
+                `;
+            }
+
+            messageArea.innerHTML = `
+                <div class="${style.bg} ${style.border} ${style.text} rounded-xl p-6 border shadow-sm animate-fade-in">
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-round ${style.iconColor} text-2xl mt-0.5">${style.icon}</span>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-lg mb-2">${title}</h4>
+                            <div class="text-sm opacity-90 leading-relaxed">${message}</div>
+                            ${actionButton}
+                        </div>
+                    </div>
+                </div>
+            `;
+            messageArea.classList.remove('hidden');
+
+            // Scroll to message if needed
+            messageArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Dark mode toggle (optional, based on system preference)
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</body>
+
+</html>
