@@ -1,0 +1,118 @@
+[debug] [2026-05-14T18:16:04.843Z] ----------------------------------------------------------------------
+[debug] [2026-05-14T18:16:05.091Z] Command:       /usr/local/share/nvm/versions/node/v24.14.0/bin/node /home/codespace/nvm/current/bin/firebase init hosting
+[debug] [2026-05-14T18:16:05.091Z] CLI Version:   15.18.0
+[debug] [2026-05-14T18:16:05.091Z] Platform:      linux
+[debug] [2026-05-14T18:16:05.092Z] Node Version:  v24.14.0
+[debug] [2026-05-14T18:16:05.092Z] Time:          Thu May 14 2026 18:16:05 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-05-14T18:16:05.092Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /workspaces/matriculas2026
+
+Before we get started, keep in mind:
+
+  * You are currently outside your home directory
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-05-14T18:16:10.626Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-14T18:16:10.694Z] > authorizing via signed-in user (est.probmatricula@escola.pr.gov.br)
+[debug] [2026-05-14T18:16:10.782Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:16:10.782Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:16:10.784Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor [none]
+[debug] [2026-05-14T18:16:17.828Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor 200
+[debug] [2026-05-14T18:16:17.869Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor {"projectId":"sgm-estpedfor","projectNumber":"679315858480","displayName":"sgm-estpedfor","name":"projects/sgm-estpedfor","resources":{"hostingSite":"sgm-estpedfor"},"state":"ACTIVE","etag":"1_60b87498-5e79-4441-b14f-28074cc9bc11"}
+[info] i  Using project sgm-estpedfor (sgm-estpedfor) . 
+[info] 
+=== Hosting Setup
+[info] 
+[debug] [2026-05-14T18:16:32.598Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:16:32.599Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:16:32.599Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor [none]
+[debug] [2026-05-14T18:16:32.837Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor 200
+[debug] [2026-05-14T18:16:32.837Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor {"projectId":"sgm-estpedfor","projectNumber":"679315858480","displayName":"sgm-estpedfor","name":"projects/sgm-estpedfor","resources":{"hostingSite":"sgm-estpedfor"},"state":"ACTIVE","etag":"1_60b87498-5e79-4441-b14f-28074cc9bc11"}
+[info] 
+[info] Your public directory is the folder (relative to your project directory) that
+[info] will contain Hosting assets to be uploaded with firebase deploy. If you
+[info] have a build process for your assets, use your build's output directory.
+[info] 
+[info] 
+[info] i  Detected a .git folder at /workspaces/matriculas2026 
+[info] i  Authorizing with GitHub to upload your service account to a GitHub repository's secrets store. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://github.com/login/oauth/authorize?client_id=89cf50f02ac6aaed3484&state=929715603&redirect_uri=http%3A%2F%2Flocalhost%3A9005&scope=read%3Auser%20repo%20public_repo
+[info] 
+[info] Waiting for authentication...
+[debug] [2026-05-14T18:18:07.616Z] ----------------------------------------------------------------------
+[debug] [2026-05-14T18:18:07.617Z] Command:       /usr/local/share/nvm/versions/node/v24.14.0/bin/node /home/codespace/nvm/current/bin/firebase init hosting
+[debug] [2026-05-14T18:18:07.618Z] CLI Version:   15.18.0
+[debug] [2026-05-14T18:18:07.618Z] Platform:      linux
+[debug] [2026-05-14T18:18:07.618Z] Node Version:  v24.14.0
+[debug] [2026-05-14T18:18:07.618Z] Time:          Thu May 14 2026 18:18:07 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-05-14T18:18:07.618Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /workspaces/matriculas2026
+
+Before we get started, keep in mind:
+
+  * You are currently outside your home directory
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-05-14T18:18:09.499Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-14T18:18:09.500Z] > authorizing via signed-in user (est.probmatricula@escola.pr.gov.br)
+[debug] [2026-05-14T18:18:09.501Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:18:09.501Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:18:09.502Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor [none]
+[debug] [2026-05-14T18:18:09.719Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor 200
+[debug] [2026-05-14T18:18:09.719Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor {"projectId":"sgm-estpedfor","projectNumber":"679315858480","displayName":"sgm-estpedfor","name":"projects/sgm-estpedfor","resources":{"hostingSite":"sgm-estpedfor"},"state":"ACTIVE","etag":"1_60b87498-5e79-4441-b14f-28074cc9bc11"}
+[info] i  Using project sgm-estpedfor (sgm-estpedfor) . 
+[info] 
+=== Hosting Setup
+[info] 
+[debug] [2026-05-14T18:24:33.529Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:24:33.529Z] Checked if tokens are valid: true, expires at: 1778786038960
+[debug] [2026-05-14T18:24:33.529Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor [none]
+[debug] [2026-05-14T18:24:33.765Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor 200
+[debug] [2026-05-14T18:24:33.765Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/sgm-estpedfor {"projectId":"sgm-estpedfor","projectNumber":"679315858480","displayName":"sgm-estpedfor","name":"projects/sgm-estpedfor","resources":{"hostingSite":"sgm-estpedfor"},"state":"ACTIVE","etag":"1_60b87498-5e79-4441-b14f-28074cc9bc11"}
+[info] 
+[info] Your public directory is the folder (relative to your project directory) that
+[info] will contain Hosting assets to be uploaded with firebase deploy. If you
+[info] have a build process for your assets, use your build's output directory.
+[info] 
+[info] 
+[info] i  Detected a .git folder at /workspaces/matriculas2026 
+[info] i  Authorizing with GitHub to upload your service account to a GitHub repository's secrets store. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://github.com/login/oauth/authorize?client_id=89cf50f02ac6aaed3484&state=132986252&redirect_uri=http%3A%2F%2Flocalhost%3A9005&scope=read%3Auser%20repo%20public_repo
+[info] 
+[info] Waiting for authentication...
