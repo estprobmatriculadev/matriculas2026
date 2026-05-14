@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogIn, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
+import { syncUserSession } from "@/services/userService";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const email = result.user.email || "";
+      const name = result.user.displayName || "";
 
       if (!email.toLowerCase().endsWith("@escola.pr.gov.br")) {
         await auth.signOut();
@@ -25,7 +27,17 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      // Sincronizar sessão e obter perfil
+      const profile = await syncUserSession(email, name);
+
+      // Redirecionar conforme o perfil
+      if (profile.role === "ADMIN") {
+        router.push("/admin");
+      } else if (profile.role === "TECNICO") {
+        router.push("/tecnico");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       console.error(err);
       setError("Erro ao realizar login. Tente novamente.");

@@ -1,0 +1,29 @@
+@startuml
+title Arquitetura de Implementação
+
+node "Client Browser" {
+    component "Next.js SPA" as UI
+}
+
+node "Vercel Platform" {
+    component "Serverless Functions" as SRV
+    component "Gemini AI" as GEM
+}
+
+cloud "Firebase" {
+    database "Firestore" as FDB
+    component "Auth" as AUTH
+}
+
+cloud "Google Workspace" {
+    component "Apps Script" as AS
+    component "Drive & Gmail" as GD
+}
+
+UI <--> SRV: HTTPS
+SRV <--> AUTH: Session
+SRV <--> FDB: Data
+SRV <--> GEM: Chat
+SRV <--> AS: Webhook
+AS <--> GD: Storage/Email
+@enduml

@@ -1,8 +1,16 @@
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 
+export type Role = "ADMIN" | "TECNICO" | "CURSISTA";
 export type Modality = "DOCENTE" | "EQUIPE GESTORA" | "TÉCNICOS";
 export type FormativeYear = "1º ANO" | "2º/3º ANO";
+
+export interface UserProfile {
+  email: string;
+  role: Role;
+  name?: string;
+  lastLogin?: any;
+}
 
 export interface UserVinculo {
   Vinculo: string;
@@ -134,5 +142,36 @@ export const verificarCotaEscolaPEDFOR = async (escolaNome: string): Promise<boo
     where("status", "==", "CONFIRMADA")
   );
   const snapshot = await getDocs(q);
-  return snapshot.size > 0; // Se já existe, cota atingida
+  return snapshot.size > 0;
+};
+
+export const getUserProfile = async (email: string): Promise<UserProfile | null> => {
+  const docRef = doc(db, "users", email.toLowerCase());
+  const docSnap = await getDoc(docRef);
+  
+  if (docSnap.exists()) {
+    return docSnap.data() as UserProfile;
+  }
+  
+  // Se não existir na coleção 'users', assume-se que é um cursista novo
+  return {
+    email: email.toLowerCase(),
+    role: "CURSISTA"
+  };
+};
+
+export const syncUserSession = async (email: string, name: string) => {
+  const userRef = doc(db, "users", email.toLowerCase());
+  const docSnap = await getDoc(userRef);
+  
+  const data = {
+    email: email.toLowerCase(),
+    name: name,
+    lastLogin: new Date(),
+    // Se for o primeiro login e não estiver pré-cadastrado, é CURSISTA
+    role: docSnap.exists() ? docSnap.data().role : "CURSISTA"
+  };
+  
+  await setDoc(userRef, data, { merge: true });
+  return data as UserProfile;
 };

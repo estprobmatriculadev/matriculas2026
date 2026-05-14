@@ -1,0 +1,22 @@
+@startuml
+package "Casos de Uso - Sistema de Matrículas" {
+    actor "Cursista (Professor)" as Cursista
+    actor "Técnico (CFDEG)" as Tecnico
+    actor "Administrador" as Admin
+    actor "Assistente Clovis (IA)" as IA
+
+    Cursista --> (Fazer Login @escola)
+    Cursista --> (Realizar Matrícula)
+    Cursista --> (Solicitar Remanejamento)
+    Cursista --> (Consultar IA - FAQ)
+    Cursista --> (Baixar Comprovante PDF)
+
+    Tecnico --> (Importar Dados CSV)
+    Tecnico --> (Analisar Remanejamentos)
+    Tecnico --> (Gerenciar Turmas)
+    
+    Admin --> (Gerenciar Usuários e Perfis)
+    Admin --> (Configurar Regras de Negócio)
+    Admin --> (Monitorar Analytics)
+}
+@enduml

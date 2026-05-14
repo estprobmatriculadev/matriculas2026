@@ -1,0 +1,19 @@
+@startuml
+title Fluxo de Remanejamento
+
+actor "Cursista" as CUR
+participant "Portal (Next.js)" as WEB
+database "Firestore" as DB
+actor "Técnico" as TEC
+participant "Apps Script" as GAS
+
+CUR -> WEB: Solicita troca de turma
+WEB -> DB: Salva solicitação (PENDENTE)
+WEB -> GAS: Dispara Notificação
+GAS -> TEC: Notifica novo pedido
+
+TEC -> WEB: Analisa e [DEFERE]
+WEB -> DB: Transação Atômica (Vagas + Matrícula)
+WEB -> GAS: Solicita novo Comprovante
+GAS -> CUR: Envia PDF por Email
+@enduml

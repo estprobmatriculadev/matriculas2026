@@ -1,0 +1,33 @@
+@startuml
+package "Modelagem de Dados (Firestore)" {
+    class User {
+        +String email
+        +String role
+        +DateTime lastLogin
+    }
+
+    class Cursista {
+        +String email
+        +String nome
+        +String eligibility
+    }
+
+    class Turma {
+        +String id
+        +String nome
+        +int vagas
+        +int matriculados
+    }
+
+    class Matricula {
+        +String id
+        +String cursistaEmail
+        +String status
+        +DateTime createdAt
+    }
+
+    User "1" -- "0..1" Cursista
+    Cursista "1" -- "0..*" Matricula
+    Turma "1" -- "0..*" Matricula
+}
+@enduml

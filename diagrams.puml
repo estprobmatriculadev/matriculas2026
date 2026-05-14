@@ -1,0 +1,120 @@
+@startuml Casos_de_Uso
+' --- DIAGRAMA DE CASOS DE USO ---
+package "Casos de Uso - Sistema de Matrículas" {
+    actor "Cursista (Professor)" as Cursista
+    actor "Técnico (CFDEG)" as Tecnico
+    actor "Administrador" as Admin
+    actor "Assistente Clovis (IA)" as IA
+
+    Cursista --> (Fazer Login @escola)
+    Cursista --> (Realizar Matrícula)
+    Cursista --> (Solicitar Remanejamento)
+    Cursista --> (Consultar IA - FAQ)
+    Cursista --> (Baixar Comprovante PDF)
+
+    Tecnico --> (Importar Dados CSV)
+    Tecnico --> (Analisar Remanejamentos)
+    Tecnico --> (Gerenciar Turmas)
+    
+    Admin --> (Gerenciar Usuários e Perfis)
+    Admin --> (Configurar Regras de Negócio)
+    Admin --> (Monitorar Analytics)
+}
+@enduml
+
+@startuml Diagrama_de_Classes
+' --- DIAGRAMA DE CLASSES ---
+package "Modelagem de Dados (Firestore)" {
+    class User {
+        +String email
+        +String role
+        +DateTime lastLogin
+    }
+
+    class Cursista {
+        +String email
+        +String nome
+        +String eligibility
+    }
+
+    class Turma {
+        +String id
+        +String nome
+        +int vagas
+        +int matriculados
+        +String fluxo
+    }
+
+    class Matricula {
+        +String id
+        +String cursistaEmail
+        +String turmaId
+        +String status
+        +DateTime createdAt
+    }
+
+    class Remanejamento {
+        +String id
+        +String matriculaId
+        +String status
+        +String motivoCursista
+    }
+
+    User "1" -- "0..1" Cursista
+    Cursista "1" -- "0..*" Matricula
+    Turma "1" -- "0..*" Matricula
+    Matricula "1" -- "0..*" Remanejamento
+}
+@enduml
+
+@startuml Sequencia_Remanejamento
+' --- DIAGRAMA DE SEQUÊNCIA ---
+title Fluxo de Remanejamento
+
+actor "Cursista" as CUR
+participant "Portal (Next.js)" as WEB
+database "Firestore" as DB
+actor "Técnico" as TEC
+participant "Apps Script" as GAS
+
+CUR -> WEB: Solicita troca de turma
+WEB -> DB: Salva solicitação (PENDENTE)
+WEB -> GAS: Dispara Notificação
+GAS -> TEC: Notifica novo pedido
+
+TEC -> WEB: Analisa e [DEFERE]
+WEB -> DB: Transação Atômica (Vagas + Matrícula)
+WEB -> GAS: Solicita novo Comprovante
+GAS -> CUR: Envia PDF por Email
+@enduml
+
+@startuml Arquitetura_Implementacao
+' --- DIAGRAMA DE IMPLEMENTAÇÃO ---
+title Arquitetura de Implementação
+
+node "Client Browser" {
+    component "Next.js SPA" as UI
+}
+
+node "Vercel Platform" {
+    component "Serverless Functions" as SRV
+    component "Gemini AI" as GEM
+}
+
+cloud "Firebase" {
+    database "Firestore" as FDB
+    component "Auth" as AUTH
+}
+
+cloud "Google Workspace" {
+    component "Apps Script" as AS
+    component "Drive & Gmail" as GD
+}
+
+UI <--> SRV: HTTPS
+SRV <--> AUTH: Session
+SRV <--> FDB: Data
+SRV <--> GEM: Chat
+SRV <--> AS: Webhook
+AS <--> GD: Storage/Email
+@enduml

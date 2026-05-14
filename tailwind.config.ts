@@ -10,10 +10,18 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
+          ep: {
+            light: "#67B230",
+            dark: "#0D8541",
+            blue: "#0768B3",
+          },
+          pedfor: {
+            purple: "#AB58B3",
+            blue: "#0C6BAF",
+            green: "#65B42E",
+          },
           dark: "#0d1b4b",
           blue: "#0f4c81",
-          accent: "#f59e0b",
-          danger: "#ef4444",
         },
       },
       backgroundImage: {
