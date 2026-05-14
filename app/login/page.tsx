@@ -1,87 +1,107 @@
 "use client";
 
+import { useState } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { LogIn, ShieldCheck } from "lucide-react";
+import { LogIn, ShieldCheck, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { syncUserSession } from "@/services/userService";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async () => {
     setLoading(true);
     setError("");
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const email = result.user.email || "";
-      const name = result.user.displayName || "";
+      const email = result.user.email;
 
-      if (!email.toLowerCase().endsWith("@escola.pr.gov.br")) {
+      if (!email?.endsWith("@escola.pr.gov.br")) {
         await auth.signOut();
-        setError("Acesso restrito a contas @escola.pr.gov.br.");
+        setError("Acesso restrito: Use seu e-mail institucional @escola.pr.gov.br");
         return;
       }
 
-      // Sincronizar sessão e obter perfil
-      const profile = await syncUserSession(email, name);
-
-      // Redirecionar conforme o perfil
-      if (profile.role === "ADMIN") {
-        router.push("/admin");
-      } else if (profile.role === "TECNICO") {
-        router.push("/tecnico");
-      } else {
-        router.push("/dashboard");
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError("Erro ao realizar login. Tente novamente.");
+      const { role } = await syncUserSession(result.user);
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error(error);
+      setError("Erro ao autenticar. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass p-12 rounded-3xl max-w-md w-full text-center"
-    >
-      <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-red-600/20">
-        <ShieldCheck className="w-10 h-10 text-white" />
-      </div>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#0d1b4b] relative overflow-hidden">
+      {/* Elementos Decorativos de Fundo */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-ep-dark/20 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-ep-blue/20 blur-[120px] rounded-full" />
 
-      <h1 className="text-3xl font-bold mb-2">Portal de Matrículas</h1>
-      <p className="text-white/50 uppercase tracking-widest text-xs font-semibold mb-8">
-        Sistema Integrado EP & PEDFOR
-      </p>
-
-      <div className="w-12 h-1 bg-gradient-to-r from-amber-500 to-red-600 mx-auto mb-8 rounded-full" />
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl mb-6 text-sm">
-          {error}
-        </div>
-      )}
-
-      <button
-        onClick={handleLogin}
-        disabled={loading}
-        className="btn-primary w-full flex items-center justify-center gap-3"
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full glass rounded-[40px] overflow-hidden shadow-2xl border border-white/10"
       >
-        <LogIn className="w-5 h-5" />
-        {loading ? "Autenticando..." : "Entrar com @escola"}
-      </button>
+        {/* Banner Institucional */}
+        <div className="w-full h-48 bg-white relative overflow-hidden p-8 flex items-center justify-center">
+          <img 
+            src="https://www.educacao.pr.gov.br/sites/default/arquivos_restritos/files/imagem/2025-07/estagio-probatorio690x311.png" 
+            alt="Estágio Probatório"
+            className="w-full h-full object-contain"
+          />
+        </div>
 
-      <p className="mt-8 text-white/30 text-xs leading-relaxed">
-        Utilize seu e-mail institucional para acessar o sistema.<br />
-        Em caso de dúvidas, entre em contato com a CFDEG.
-      </p>
-    </motion.div>
+        <div className="p-10 space-y-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">Portal de Matrículas</h2>
+            <p className="text-white/40 text-sm">Secretaria da Educação do Paraná</p>
+          </div>
+
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3"
+            >
+              <Info className="w-5 h-5 text-red-500 shrink-0" />
+              <p className="text-xs text-red-200">{error}</p>
+            </motion.div>
+          )}
+
+          <div className="space-y-4">
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className="w-full bg-white text-[#0d1b4b] hover:bg-white/90 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 shadow-xl active:scale-95 disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="w-6 h-6 border-4 border-[#0d1b4b]/20 border-t-[#0d1b4b] rounded-full animate-spin" />
+              ) : (
+                <>
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/smartlock/icon_google.svg" className="w-5 h-5" alt="Google" />
+                  Entrar com @escola
+                </>
+              )}
+            </button>
+
+            <div className="flex items-center gap-2 justify-center text-white/30 text-[10px] uppercase tracking-widest font-bold">
+              <ShieldCheck className="w-3 h-3" />
+              Acesso Institucional Seguro
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-black/20 p-6 text-center border-t border-white/5">
+          <p className="text-white/20 text-[10px] leading-relaxed">
+            Ao acessar, você concorda com os termos de uso e política de privacidade da SEED-PR.
+          </p>
+        </div>
+      </motion.div>
+    </div>
   );
 }
