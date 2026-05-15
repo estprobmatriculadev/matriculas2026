@@ -1,177 +1,61 @@
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
-
-export type Role = "ADMIN" | "TECNICO" | "CURSISTA";
-export type Modality = "DOCENTE" | "EQUIPE GESTORA" | "TÉCNICOS";
-export type FormativeYear = "1º ANO" | "2º/3º ANO";
-
-export interface UserProfile {
-  email: string;
-  role: Role;
-  name?: string;
-  lastLogin?: any;
-}
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { User } from "firebase/auth";
 
 export interface UserVinculo {
-  Vinculo: string;
-  DiscNome: string;
   DiscFuncExeNome: string;
   EstabExeNome: string;
-  GrupoExeDescricao: string;
-  TurnoExeDescricao: string;
-  PeriodoIni: string;
-  modalidade_calc: Modality;
-  ano_formativo_calc: FormativeYear;
-  componente_matriz: string;
+  Vinculo: string;
+  modalidade_calc?: string;
+  ano_formativo_calc?: string;
+  componente_matriz?: string;
 }
 
-export const normalizarString = (str: string): string => {
-  return str
-    ?.toString()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toUpperCase() || "";
-};
-
-export const mapearComponenteParaTurma = (
-  discNome: string,
-  modalidade: Modality,
-  discFuncExeNome: string
-): string => {
-  if (modalidade === "EQUIPE GESTORA") return "EQ GESTORA";
+export const syncUserSession = async (user: User) => {
+  if (!user.email) throw new Error("E-mail não fornecido pelo provedor.");
   
-  const discEfetivo = (!discNome || discNome.toUpperCase() === "NULL") 
-    ? (discFuncExeNome || "") 
-    : discNome;
-    
-  if (!discEfetivo) return "";
+  const userRef = doc(db, "users", user.email.toLowerCase());
+  const userSnap = await getDoc(userRef);
 
-  const n = normalizarString(discEfetivo);
-  
-  if (n.includes("PORTUGUES") || n === "LINGUA PORTUGUESA") return "PORTUGUES";
-  if (n.includes("LEITURA") || n.includes("REDACAO") || n.includes("LITERATURA")) return "PORTUGUES";
-  if (n === "MATEMATICA") return "MATEMATICA";
-  if (n === "HISTORIA") return "HISTORIA";
-  if (n === "GEOGRAFIA") return "GEOGRAFIA";
-  if (n === "BIOLOGIA") return "BIOLOGIA";
-  if (n === "FISICA") return "FISICA";
-  if (n === "QUIMICA") return "QUIMICA";
-  if (n === "FILOSOFIA") return "FILOSOFIA";
-  if (n === "SOCIOLOGIA") return "SOCIOLOGIA";
-  if (n === "ARTE") return "ARTE";
-  if (n === "CIENCIAS") return "CIENCIAS";
-  if (n.includes("INGLES")) return "INGLES";
-  if (n === "EDUCACAO FISICA") return "EDUCACAO FISICA";
-  if (n === "PEDAGOGO" || n === "ORIENTADOR EDUCACIONAL" || n === "EQUIPE PEDAGOGICA") return "EQ GESTORA";
-  
-  return n;
-};
+  const userData = {
+    uid: user.uid,
+    email: user.email.toLowerCase(),
+    displayName: user.displayName,
+    photoURL: user.photoURL,
+    lastLogin: serverTimestamp(),
+  };
 
-export const calcularAnoFormativo = (periodoIni: string): FormativeYear => {
-  if (!periodoIni) return "2º/3º ANO";
-  const data = new Date(periodoIni);
-  if (isNaN(data.getTime())) return "2º/3º ANO";
-
-  const time = data.getTime();
-  // Simplified ranges from legacy codigo.gs
-  if (time >= new Date("2025-05-11").getTime()) return "1º ANO";
-  return "2º/3º ANO";
+  if (!userSnap.exists()) {
+    await setDoc(userRef, { ...userData, role: "CURSISTA", createdAt: serverTimestamp() });
+    return { role: "CURSISTA" };
+  } else {
+    await setDoc(userRef, userData, { merge: true });
+    return userSnap.data() as { role: string };
+  }
 };
 
 export const processarPerfilCursista = (dados: any[]): UserVinculo[] => {
-  const resultados = dados.map((v) => {
-    const estab = normalizarString(v.EstabExeNome);
-    const func = normalizarString(v.DiscFuncExeNome);
-    const disc = normalizarString(v.DiscNome);
-    const grupo = normalizarString(v.GrupoExeDescricao);
+  return dados.map(d => {
+    let modalidade = "N/A";
+    let ano = "N/A";
+    
+    const obs = (d.Observacao || "").toUpperCase();
+    if (obs.includes("EJA")) modalidade = "EJA";
+    else if (obs.includes("REGULAR")) modalidade = "REGULAR";
+    else if (obs.includes("PROFISSIONAL")) modalidade = "PROFISSIONAL";
 
-    let modalidade: Modality = "DOCENTE";
-    if (
-      estab.includes("NUCLEO REG EDUCACAO") ||
-      estab.includes("SEED") ||
-      grupo.includes("NRE") ||
-      grupo.includes("SEED") ||
-      disc.includes("ATUA NUCLEO") ||
-      func.includes("ATUA NUCLEO")
-    ) {
-      modalidade = "TÉCNICOS";
-    } else if (
-      grupo === "LOTACAO NO MUNICIPIO" ||
-      func.includes("DIRETOR") ||
-      func.includes("EQUIPE PEDAGOGICA") ||
-      disc.includes("PEDAGOGO")
-    ) {
-      modalidade = "EQUIPE GESTORA";
-    }
-
-    const ano_formativo_calc = calcularAnoFormativo(v.PeriodoIni);
+    const matriz = (d.ComponenteCurricularMatriz || "").toUpperCase();
+    if (matriz.includes("1 ANO")) ano = "1 ANO";
+    else if (matriz.includes("2 ANO")) ano = "2 ANO";
+    else if (matriz.includes("3 ANO")) ano = "3 ANO";
 
     return {
-      ...v,
+      DiscFuncExeNome: d.DiscFuncExeNome || "",
+      EstabExeNome: d.EstabExeNome || "",
+      Vinculo: d.Vinculo || "",
       modalidade_calc: modalidade,
-      ano_formativo_calc,
+      ano_formativo_calc: ano,
+      componente_matriz: d.ComponenteCurricularMatriz || ""
     };
   });
-
-  // Regra de Ouro: Se qualquer QPM for 1º Ano, tudo é 1º Ano
-  const temIndicio1oAnoQPM = resultados.some((v) => {
-    const isQPM = v.Vinculo?.toUpperCase().includes("QPM") || v.GrupoExeDescricao?.toUpperCase().includes("QPM");
-    return isQPM && v.ano_formativo_calc === "1º ANO";
-  });
-
-  if (temIndicio1oAnoQPM) {
-    resultados.forEach((v) => {
-      v.ano_formativo_calc = "1º ANO";
-    });
-  }
-
-  // Mapear componentes
-  resultados.forEach((v) => {
-    v.componente_matriz = mapearComponenteParaTurma(v.DiscNome, v.modalidade_calc, v.DiscFuncExeNome);
-  });
-
-  return resultados;
-};
-
-export const verificarCotaEscolaPEDFOR = async (escolaNome: string): Promise<boolean> => {
-  const q = query(
-    collection(db, "matriculas"),
-    where("fluxo", "==", "PEDFOR"),
-    where("EstabExeNome", "==", normalizarString(escolaNome)),
-    where("status", "==", "CONFIRMADA")
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.size > 0;
-};
-
-export const getUserProfile = async (email: string): Promise<UserProfile | null> => {
-  const docRef = doc(db, "users", email.toLowerCase());
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    return docSnap.data() as UserProfile;
-  }
-  
-  // Se não existir na coleção 'users', assume-se que é um cursista novo
-  return {
-    email: email.toLowerCase(),
-    role: "CURSISTA"
-  };
-};
-
-export const syncUserSession = async (email: string, name: string) => {
-  const userRef = doc(db, "users", email.toLowerCase());
-  const docSnap = await getDoc(userRef);
-  
-  const data = {
-    email: email.toLowerCase(),
-    name: name,
-    lastLogin: new Date(),
-    // Se for o primeiro login e não estiver pré-cadastrado, é CURSISTA
-    role: docSnap.exists() ? docSnap.data().role : "CURSISTA"
-  };
-  
-  await setDoc(userRef, data, { merge: true });
-  return data as UserProfile;
 };

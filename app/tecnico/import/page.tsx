@@ -45,7 +45,9 @@ export default function ImportPage() {
     
     try {
       data.forEach((item) => {
-        const id = type === "cursistas" ? item.email.toLowerCase() : item.id;
+        const id = type === "cursistas" 
+          ? (item.email ? item.email.toLowerCase() : `unknown_${Math.random()}`) 
+          : item.id;
         const ref = doc(db, type, id);
         batch.set(ref, { 
           ...item, 
