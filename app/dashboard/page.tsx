@@ -1,11 +1,10 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit, doc, setDoc, onSnapshot } from "firebase/firestore";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { 
@@ -15,7 +14,10 @@ import {
   FileText,
   MoveUp,
   CalendarDays,
-  AlertCircle
+  AlertCircle,
+  Edit2,
+  Save,
+  Clock
 } from "lucide-react";
 import { syncUserSession } from "@/services/userService";
 
@@ -24,6 +26,9 @@ export default function DashboardPage() {
   const [matricula, setMatricula] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("CURSISTA");
   const [loading, setLoading] = useState(true);
+  const [dates, setDates] = useState<any[]>([]);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ dia: "", mes: "", titulo: "", desc: "" });
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -55,13 +60,27 @@ export default function DashboardPage() {
     };
 
     initializeDashboard();
+
+    // Listen to important dates
+    const unsubscribeDates = onSnapshot(collection(db, "dates"), (snap) => {
+      setDates(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => unsubscribeDates();
   }, [router]);
+
+  const handleSaveDate = async (id: string) => {
+    await setDoc(doc(db, "dates", id), editForm, { merge: true });
+    setEditingDate(null);
+  };
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-background">
       <Loader2 className="w-12 h-12 text-primary animate-spin" />
     </div>
   );
+
+  const isAdmin = userRole === "ADMIN" || userRole === "TECNICO";
 
   return (
     <AppLayout userRole={userRole}>
@@ -84,7 +103,7 @@ export default function DashboardPage() {
               <div className="w-[1px] h-10 bg-on-primary/20"></div>
               <div className="flex flex-col">
                 <span className="text-[10px] uppercase font-bold tracking-widest opacity-70 mb-1">Ciclo Atual</span>
-                <span className="text-lg font-semibold">Janeiro 2026</span>
+                <span className="text-lg font-semibold">1º Semestre de 2026</span>
               </div>
             </div>
           </div>
@@ -118,28 +137,43 @@ export default function DashboardPage() {
               <h3 className="text-xl font-bold text-primary mb-1">Remanejamento</h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">Inicie ou acompanhe seu processo de troca de turma ou unidade escolar.</p>
             </div>
-            <button 
-              onClick={() => router.push("/remanejamento/request")}
-              className="mt-6 px-6 py-2.5 border-2 border-primary text-primary text-sm font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all"
-            >
-              Solicitar Troca
-            </button>
+            {userRole === "CURSISTA" ? (
+              <button 
+                onClick={() => router.push("/remanejamento/request")}
+                className="mt-6 px-6 py-2.5 border-2 border-primary text-primary text-sm font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all"
+              >
+                Solicitar Troca
+              </button>
+            ) : (
+              <button 
+                onClick={() => router.push("/tecnico/remanejamento")}
+                className="mt-6 px-6 py-2.5 border-2 border-primary text-primary text-sm font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all"
+              >
+                Gerenciar Fila
+              </button>
+            )}
           </div>
 
-          {/* Card 3: Inscrição (Bento Destaque) */}
+          {/* Card 3: Inscrição (Aviso 2º Semestre) */}
           <div className="bg-primary text-on-primary p-8 rounded-[2rem] flex flex-col items-start gap-4 hover:shadow-2xl transition-all relative overflow-hidden group">
             <div className="z-10 h-full flex flex-col">
               <div className="w-14 h-14 bg-on-primary/20 rounded-2xl flex items-center justify-center mb-6">
                 <CalendarDays size={24} />
               </div>
               <h3 className="text-xl font-bold mb-2 text-white">Nova Inscrição</h3>
-              <p className="text-sm opacity-80 mb-8 leading-relaxed">Inscreva-se nos fluxos de EP ou PEDFOR para o ciclo 2026.</p>
+              <div className="bg-white/10 p-4 rounded-xl border border-white/20 mb-6">
+                <p className="text-sm font-bold flex items-center gap-2">
+                  <Clock size={16} /> 🕒 Próxima janela em breve!
+                </p>
+                <p className="text-xs opacity-80 mt-1">
+                  As inscrições para o próximo ciclo iniciarão no **segundo semestre de 2026**. Fique atento! 🤡✨
+                </p>
+              </div>
               <button 
-                onClick={() => router.push("/matricula/EP")}
-                className="mt-auto px-8 py-3 bg-secondary-container text-on-secondary-container font-bold rounded-full flex items-center gap-2 hover:scale-105 transition-transform"
+                disabled
+                className="mt-auto px-8 py-3 bg-white/20 text-white font-bold rounded-full flex items-center gap-2 opacity-50 cursor-not-allowed"
               >
-                Inscrever-se Agora
-                <ChevronRight size={18} />
+                Indisponível no Momento
               </button>
             </div>
             <div className="absolute -bottom-6 -right-6 opacity-10 group-hover:scale-110 transition-transform">
@@ -157,20 +191,76 @@ export default function DashboardPage() {
             </h3>
           </div>
           <div className="divide-y divide-surface-border">
-            <div className="px-8 py-6 flex flex-col md:flex-row items-center gap-8 hover:bg-surface-container-lowest transition-colors">
-              <div className="flex flex-col items-center justify-center min-w-[80px] h-20 bg-surface-container rounded-2xl border-l-4 border-primary">
-                <span className="text-[10px] font-bold uppercase text-primary">FEV</span>
-                <span className="text-2xl font-bold text-primary">02</span>
-              </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-on-surface">Início das Aulas - Ciclo 2026</h4>
-                <p className="text-sm text-on-surface-variant">Aula inaugural disponível no portal do cursista.</p>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-status-success/10 text-emerald-700 font-bold text-xs border border-emerald-200">
-                <AlertCircle size={14} />
-                CONFIRMADO
-              </div>
-            </div>
+            {dates.length === 0 ? (
+              <div className="p-8 text-center text-on-surface-variant italic">Nenhuma data cadastrada.</div>
+            ) : (
+              dates.map(date => (
+                <div key={date.id} className="px-8 py-6 flex flex-col md:flex-row items-center gap-8 hover:bg-surface-container-low transition-colors group">
+                  <div className="flex flex-col items-center justify-center min-w-[80px] h-20 bg-surface-container rounded-2xl border-l-4 border-primary">
+                    {editingDate === date.id ? (
+                      <input 
+                        className="w-12 text-center font-bold bg-transparent border-b border-primary outline-none"
+                        value={editForm.dia}
+                        onChange={e => setEditForm({...editForm, dia: e.target.value})}
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold text-primary">{date.dia}</span>
+                    )}
+                    {editingDate === date.id ? (
+                      <input 
+                        className="w-12 text-center text-[10px] font-bold bg-transparent outline-none"
+                        value={editForm.mes}
+                        onChange={e => setEditForm({...editForm, mes: e.target.value})}
+                      />
+                    ) : (
+                      <span className="text-[10px] font-bold uppercase text-primary">{date.mes}</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    {editingDate === date.id ? (
+                      <input 
+                        className="block w-full font-bold text-on-surface bg-transparent border-b border-primary outline-none mb-1"
+                        value={editForm.titulo}
+                        onChange={e => setEditForm({...editForm, titulo: e.target.value})}
+                      />
+                    ) : (
+                      <h4 className="font-bold text-on-surface">{date.titulo}</h4>
+                    )}
+                    {editingDate === date.id ? (
+                      <input 
+                        className="block w-full text-sm text-on-surface-variant bg-transparent outline-none"
+                        value={editForm.desc}
+                        onChange={e => setEditForm({...editForm, desc: e.target.value})}
+                      />
+                    ) : (
+                      <p className="text-sm text-on-surface-variant">{date.desc}</p>
+                    )}
+                  </div>
+                  {isAdmin && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      {editingDate === date.id ? (
+                        <button 
+                          onClick={() => handleSaveDate(date.id)}
+                          className="p-2 bg-secondary text-on-secondary rounded-full"
+                        >
+                          <Save size={18} />
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            setEditingDate(date.id);
+                            setEditForm({ dia: date.dia, mes: date.mes, titulo: date.titulo, desc: date.desc });
+                          }}
+                          className="p-2 bg-primary/10 text-primary rounded-full"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </section>
       </div>
