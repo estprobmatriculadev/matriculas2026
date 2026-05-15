@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,19 +12,11 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Inicializa o Firebase apenas se não houver uma app já inicializada
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
 const auth = getAuth(app);
-
-let analytics;
-if (typeof window !== "undefined") {
-  analytics = getAnalytics(app);
-}
-
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  hd: "escola.pr.gov.br", // Force selection of school domain
-});
 
-export { app, db, auth, googleProvider, analytics };
+export { app, auth, db, googleProvider };
