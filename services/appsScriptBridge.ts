@@ -2,7 +2,7 @@
  * Serviço de comunicação com o Google Apps Script (Middleware)
  */
 
-const APPS_SCRIPT_URL = process.env.NEXT_PUBLIC_APPS_SCRIPT_URL || "";
+const APPS_SCRIPT_URL = process.env.NEXT_PUBLIC_APPS_SCRIPT_URL || process.env.APPS_SCRIPT_URL || "";
 
 export const triggerGerarComprovante = async (payload: {
   cursistaNome: string;
