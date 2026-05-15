@@ -24,8 +24,8 @@ export const getGeminiResponse = async (userMessage: string, history: { role: st
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Atualizado para gemini-2.0-flash conforme solicitado
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    // Atualizado para gemini-2.5-flash conforme solicitado
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const chat = model.startChat({
       history: [
@@ -40,6 +40,6 @@ export const getGeminiResponse = async (userMessage: string, history: { role: st
     return text || "O assistente não conseguiu gerar uma resposta. Tente reformular a pergunta.";
   } catch (error: any) {
     console.error("Erro no Gemini:", error);
-    return `ERRO TÉCNICO: ${error.message || "Erro desconhecido ao acessar o Google AI"}. Verifique se o modelo gemini-2.0-flash está liberado para sua chave no Google AI Studio.`;
+    return `ERRO TÉCNICO: ${error.message || "Erro desconhecido ao acessar o Google AI"}. DICA: Se o modelo 'gemini-2.5-flash' retornar 404, verifique o nome exato do modelo no seu console do Google AI Studio.`;
   }
 };
