@@ -2,29 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  BookOpen, 
-  GraduationCap, 
-  ArrowRight, 
-  CheckCircle2, 
-  ArrowRightLeft, 
-  FileText, 
-  Calendar, 
-  Clock,
-  Loader2,
-  Library
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import AppLayout from "@/components/AppLayout";
+import { motion } from "framer-motion";
+import { 
+  Loader2, 
+  ChevronRight,
+  School,
+  FileText,
+  MoveUp,
+  CalendarDays,
+  AlertCircle
+} from "lucide-react";
+import { syncUserSession } from "@/services/userService";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [matricula, setMatricula] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("CURSISTA");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkMatricula = async () => {
+    const initializeDashboard = async () => {
       const user = auth.currentUser;
       if (!user) {
         router.push("/login");
@@ -32,6 +32,9 @@ export default function DashboardPage() {
       }
 
       try {
+        const { role } = await syncUserSession(user);
+        setUserRole(role);
+
         const q = query(
           collection(db, "matriculas"), 
           where("cursistaEmail", "==", user.email),
@@ -49,150 +52,126 @@ export default function DashboardPage() {
       }
     };
 
-    checkMatricula();
+    initializeDashboard();
   }, [router]);
 
-  const flows = [
-    {
-      id: "EP",
-      title: "Estágio Probatório",
-      description: "Fluxo obrigatório para servidores QPM em período de avaliação.",
-      icon: GraduationCap,
-      color: "from-brand-ep-light to-brand-ep-dark",
-      link: "/matricula/EP"
-    },
-    {
-      id: "PEDFOR",
-      title: "PEDFOR",
-      description: "Curso de formação contínua. Limite de uma vaga por escola.",
-      icon: BookOpen,
-      color: "from-brand-pedfor-blue to-brand-pedfor-purple",
-      link: "/matricula/PEDFOR"
-    }
-  ];
-
   if (loading) return (
-    <div className="flex flex-col items-center justify-center py-32 opacity-20">
-      <Loader2 className="w-12 h-12 animate-spin mb-4" />
-      <p>Acessando portal...</p>
+    <div className="flex h-screen items-center justify-center bg-background">
+      <Loader2 className="w-12 h-12 text-primary animate-spin" />
     </div>
   );
 
   return (
-    <div className="max-w-6xl w-full p-6">
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-12"
-      >
-        <h1 className="text-4xl font-bold mb-2">Bem-vindo(a), {auth.currentUser?.displayName?.split(" ")[0]}</h1>
-        <p className="text-white/40">Gerencie suas formações e matrículas para 2026.</p>
-      </motion.div>
-
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Actions */}
-        <div className="lg:col-span-2 space-y-8">
-          <AnimatePresence>
-            {matricula ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="glass p-8 rounded-3xl border-brand-ep-light/30 bg-brand-ep-light/5 relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 p-6 opacity-10">
-                  <CheckCircle2 className="w-32 h-32 text-brand-ep-light" />
-                </div>
-                
-                <div className="relative z-10">
-                  <span className="bg-brand-ep-light text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-4 inline-block">
-                    Matrícula Confirmada
-                  </span>
-                  <h2 className="text-3xl font-bold mb-6">{matricula.turmaNome}</h2>
-                  
-                  <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-white/40">
-                        <Calendar className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-white/40 uppercase">Dia da Semana</p>
-                        <p className="text-sm font-semibold">{matricula.diaSemana || "Não definido"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-white/40">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-white/40 uppercase">Horário</p>
-                        <p className="text-sm font-semibold">{matricula.horarioIni || "A definir"}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-4">
-                    <button className="btn-primary flex items-center gap-2">
-                      <FileText className="w-4 h-4" /> Comprovante
-                    </button>
-                    <button 
-                      onClick={() => router.push("/remanejamento/request")}
-                      className="btn-secondary flex items-center gap-2"
-                    >
-                      <ArrowRightLeft className="w-4 h-4" /> Solicitar Troca
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-6">
-                {flows.map((flow, index) => (
-                  <motion.div
-                    key={flow.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    onClick={() => router.push(flow.link)}
-                    className="glass group cursor-pointer p-8 rounded-3xl hover:bg-white/10 transition-all border-white/5 hover:border-white/20"
-                  >
-                    <div className={`w-14 h-14 bg-gradient-to-br ${flow.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                      <flow.icon className="w-7 h-7 text-white" />
-                    </div>
-                    <h2 className="text-xl font-bold mb-2">{flow.title}</h2>
-                    <p className="text-white/40 text-xs mb-6">{flow.description}</p>
-                    <div className="flex items-center text-xs font-bold uppercase tracking-wider group-hover:gap-2 transition-all">
-                      Inscrever-se <ArrowRight className="w-4 h-4 ml-2" />
-                    </div>
-                  </motion.div>
-                ))}
+    <AppLayout userRole={userRole}>
+      <div className="space-y-stack-lg">
+        {/* Welcome Hero Section */}
+        <section className="bg-primary text-on-primary p-8 rounded-[2rem] shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="z-10 max-w-2xl">
+            <h2 className="text-3xl font-bold mb-2">Bem-vindo, {auth.currentUser?.displayName?.split(" ")[0]}!</h2>
+            <p className="text-lg opacity-80 mb-8 leading-relaxed">
+              Sua jornada formativa está em andamento. Acompanhe abaixo o status da sua matrícula e as próximas etapas.
+            </p>
+            
+            <div className="inline-flex items-center gap-6 bg-on-primary/10 border border-on-primary/20 px-8 py-5 rounded-2xl">
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-70 mb-1">Status da Matrícula</span>
+                <span className="text-lg font-semibold text-secondary-container">
+                  {matricula ? "Matrícula Confirmada" : "Inscrição Pendente"}
+                </span>
               </div>
-            )}
-          </AnimatePresence>
-        </div>
+              <div className="w-[1px] h-10 bg-on-primary/20"></div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold tracking-widest opacity-70 mb-1">Ciclo Atual</span>
+                <span className="text-lg font-semibold">Janeiro 2026</span>
+              </div>
+            </div>
+          </div>
+          <div className="hidden lg:block opacity-20 transform translate-x-12">
+            <School size={180} />
+          </div>
+        </section>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <div className="glass p-6 rounded-3xl">
-            <h3 className="text-sm font-bold flex items-center gap-2 mb-6">
-              <Library className="w-4 h-4 text-brand-ep-light" />
-              Recursos Rápidos
-            </h3>
-            <div className="space-y-3">
-              <button className="w-full text-left p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all text-xs font-semibold flex items-center justify-between group">
-                Biblioteca de Materiais
-                <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" />
+        {/* Action Cards Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+          {/* Card 1: Comprovante */}
+          <div className="bg-surface-container-lowest border border-surface-border p-8 rounded-[2rem] flex flex-col items-start gap-4 hover:shadow-xl transition-all group">
+            <div className="w-14 h-14 bg-surface-container rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+              <FileText size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-primary mb-1">Comprovante Digital</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed">Baixe o documento oficial de matrícula e situação funcional atualizada.</p>
+            </div>
+            <button className="mt-6 px-6 py-2.5 border-2 border-primary text-primary text-sm font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all">
+              Ver Documento
+            </button>
+          </div>
+
+          {/* Card 2: Remanejamento */}
+          <div className="bg-surface-container-lowest border border-surface-border p-8 rounded-[2rem] flex flex-col items-start gap-4 hover:shadow-xl transition-all group">
+            <div className="w-14 h-14 bg-secondary-container rounded-2xl flex items-center justify-center text-on-secondary-container group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+              <MoveUp size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-primary mb-1">Remanejamento</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed">Inicie ou acompanhe seu processo de troca de turma ou unidade escolar.</p>
+            </div>
+            <button 
+              onClick={() => router.push("/remanejamento/request")}
+              className="mt-6 px-6 py-2.5 border-2 border-primary text-primary text-sm font-bold rounded-full hover:bg-primary hover:text-on-primary transition-all"
+            >
+              Solicitar Troca
+            </button>
+          </div>
+
+          {/* Card 3: Inscrição (Bento Destaque) */}
+          <div className="bg-primary text-on-primary p-8 rounded-[2rem] flex flex-col items-start gap-4 hover:shadow-2xl transition-all relative overflow-hidden group">
+            <div className="z-10 h-full flex flex-col">
+              <div className="w-14 h-14 bg-on-primary/20 rounded-2xl flex items-center justify-center mb-6">
+                <CalendarDays size={24} />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white">Nova Inscrição</h3>
+              <p className="text-sm opacity-80 mb-8 leading-relaxed">Inscreva-se nos fluxos de EP ou PEDFOR para o ciclo 2026.</p>
+              <button 
+                onClick={() => router.push("/matricula/EP")}
+                className="mt-auto px-8 py-3 bg-secondary-container text-on-secondary-container font-bold rounded-full flex items-center gap-2 hover:scale-105 transition-transform"
+              >
+                Inscrever-se Agora
+                <ChevronRight size={18} />
               </button>
-              <button className="w-full text-left p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all text-xs font-semibold flex items-center justify-between group">
-                Cronograma 2026
-                <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" />
-              </button>
-              <button className="w-full text-left p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all text-xs font-semibold flex items-center justify-between group">
-                Dúvidas Frequentes
-                <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" />
-              </button>
+            </div>
+            <div className="absolute -bottom-6 -right-6 opacity-10 group-hover:scale-110 transition-transform">
+              <School size={120} />
             </div>
           </div>
         </div>
+
+        {/* Important Dates */}
+        <section className="bg-surface-container-lowest border border-surface-border rounded-[2rem] overflow-hidden shadow-sm">
+          <div className="px-8 py-6 border-b border-surface-border flex justify-between items-center bg-surface-container-low">
+            <h3 className="text-xl font-bold text-primary flex items-center gap-3">
+              <span className="material-symbols-outlined">calendar_month</span>
+              Próximas Datas Importantes
+            </h3>
+          </div>
+          <div className="divide-y divide-surface-border">
+            <div className="px-8 py-6 flex flex-col md:flex-row items-center gap-8 hover:bg-surface-container-lowest transition-colors">
+              <div className="flex flex-col items-center justify-center min-w-[80px] h-20 bg-surface-container rounded-2xl border-l-4 border-primary">
+                <span className="text-[10px] font-bold uppercase text-primary">FEV</span>
+                <span className="text-2xl font-bold text-primary">02</span>
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-on-surface">Início das Aulas - Ciclo 2026</h4>
+                <p className="text-sm text-on-surface-variant">Aula inaugural disponível no portal do cursista.</p>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-status-success/10 text-emerald-700 font-bold text-xs border border-emerald-200">
+                <AlertCircle size={14} />
+                CONFIRMADO
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
+    </AppLayout>
   );
 }

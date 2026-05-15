@@ -1,199 +1,176 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
+import AppLayout from "@/components/AppLayout";
+import { getGeminiResponse } from "@/services/geminiService";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   FileText, 
   Search, 
-  Download, 
-  MessageCircle, 
+  MessageSquare, 
   Send, 
-  X, 
+  User, 
   Bot, 
-  User,
-  Loader2,
-  ChevronRight
+  ExternalLink,
+  Download,
+  Info
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { db } from "@/lib/firebase";
-import { collection, query, getDocs, orderBy } from "firebase/firestore";
-import { getGeminiResponse } from "@/services/geminiService";
 
 export default function DocumentosPage() {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: "user" | "model", text: string }[]>([]);
+  const [messages, setMessages] = useState<any[]>([
+    { role: "assistant", content: "Olá! Sou o Assistente Clovis. Como posso ajudar você com suas dúvidas sobre matrículas, EP ou PedFor?" }
+  ]);
   const [input, setInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<null | HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchDocs = async () => {
-      try {
-        const q = query(collection(db, "documentos"), orderBy("createdAt", "desc"));
-        const snap = await getDocs(q);
-        setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDocs();
+    carregarDocumentos();
   }, []);
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const carregarDocumentos = async () => {
+    const q = query(collection(db, "documentos"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setLoading(false);
   };
 
-  useEffect(scrollToBottom, [messages]);
-
   const handleSendMessage = async () => {
-    if (!input.trim() || chatLoading) return;
-    
-    const userMsg = input.trim();
+    if (!input.trim()) return;
+    const userMsg = { role: "user", content: input };
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
-    setMessages(prev => [...prev, { role: "user", text: userMsg }]);
-    setChatLoading(true);
-
-    const history = messages.map(m => ({ 
-      role: m.role, 
-      parts: [{ text: m.text }] 
-    }));
-
-    const response = await getGeminiResponse(userMsg, history);
-    setMessages(prev => [...prev, { role: "model", text: response }]);
-    setChatLoading(false);
+    
+    const response = await getGeminiResponse(input);
+    setMessages(prev => [...prev, { role: "assistant", content: response }]);
   };
 
   return (
-    <div className="max-w-6xl w-full p-6">
-      <header className="mb-12">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <FileText className="text-brand-ep-light" />
-          Documentos Oficiais
-        </h1>
-        <p className="text-white/40">Manuais, editais e orientações institucionais para 2026.</p>
-      </header>
+    <AppLayout>
+      <div className="max-w-6xl mx-auto space-y-8 pb-20">
+        <header>
+          <h1 className="text-3xl font-bold text-primary">Documentos e Suporte</h1>
+          <p className="text-on-surface-variant">Acesse editais, manuais e tire suas dúvidas com nossa IA.</p>
+        </header>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Documents List */}
-        <div className="lg:col-span-2 space-y-4">
-          {loading ? (
-            <div className="flex justify-center py-20 opacity-20"><Loader2 className="animate-spin" /></div>
-          ) : docs.length === 0 ? (
-            <div className="glass p-12 text-center rounded-3xl text-white/20">Nenhum documento publicado no momento.</div>
-          ) : (
-            docs.map(doc => (
-              <motion.div 
-                key={doc.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass p-6 rounded-2xl flex items-center justify-between group hover:bg-white/5 transition-all"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-brand-ep-light">
-                    <FileText className="w-6 h-6" />
+        <div className="grid lg:grid-cols-3 gap-10">
+          {/* Documentos List */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors" size={20} />
+              <input 
+                type="text" 
+                placeholder="Buscar documento ou edital..." 
+                className="w-full bg-surface-container-lowest border border-surface-border rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-sm"
+              />
+            </div>
+
+            <div className="bg-surface-container-lowest rounded-[2rem] border border-surface-border shadow-sm overflow-hidden">
+              <div className="px-8 py-4 border-b border-surface-border bg-surface-container-low flex justify-between items-center">
+                <span className="text-xs font-bold text-primary uppercase tracking-widest">Documentos Oficiais</span>
+                <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded font-bold">PDF / LINKS</span>
+              </div>
+              
+              <div className="divide-y divide-surface-border">
+                {docs.length === 0 ? (
+                  <div className="p-12 text-center text-on-surface-variant italic">
+                    Nenhum documento disponível no momento.
+                  </div>
+                ) : (
+                  docs.map(d => (
+                    <div key={d.id} className="p-6 flex items-center justify-between hover:bg-surface-container-low transition-colors group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all">
+                          <FileText size={24} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-on-surface">{d.titulo}</h4>
+                          <p className="text-xs text-on-surface-variant">{d.categoria || "Geral"}</p>
+                        </div>
+                      </div>
+                      <a 
+                        href={d.url} 
+                        target="_blank" 
+                        className="p-3 bg-surface-container rounded-full text-primary hover:bg-primary hover:text-on-primary transition-all shadow-sm"
+                      >
+                        <Download size={18} />
+                      </a>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ IA Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-primary text-on-primary rounded-[2rem] p-8 shadow-xl relative overflow-hidden flex flex-col h-[500px]">
+              <div className="z-10 flex-1 flex flex-col">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-on-primary/20 rounded-full flex items-center justify-center">
+                    <Bot size={20} />
                   </div>
                   <div>
-                    <h3 className="font-bold">{doc.titulo}</h3>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">{doc.categoria}</p>
+                    <h3 className="font-bold">Assistente Clovis</h3>
+                    <p className="text-[10px] opacity-60 uppercase tracking-widest font-bold">Powered by Gemini IA</p>
                   </div>
                 </div>
-                <a 
-                  href={doc.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-brand-ep-light hover:text-white transition-all"
-                >
-                  <Download className="w-4 h-4" />
-                </a>
-              </motion.div>
-            ))
-          )}
-        </div>
 
-        {/* FAQ Widget / Quick Access */}
-        <div className="space-y-6">
-          <div 
-            onClick={() => setChatOpen(true)}
-            className="glass p-8 rounded-3xl bg-brand-ep-light/10 border-brand-ep-light/20 cursor-pointer group hover:bg-brand-ep-light/20 transition-all"
-          >
-            <Bot className="w-10 h-10 text-brand-ep-light mb-4" />
-            <h3 className="text-xl font-bold mb-2">Dúvidas? Fale com o Clovis</h3>
-            <p className="text-sm text-white/50 mb-6">Nosso assistente de IA está pronto para responder sobre prazos e regras.</p>
-            <div className="flex items-center gap-2 text-brand-ep-light font-bold text-sm">
-              Iniciar Chat <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-all" />
+                <div className="flex-1 bg-white/10 rounded-2xl p-4 overflow-y-auto space-y-4 mb-4 scrollbar-hide">
+                  {messages.map((m, i) => (
+                    <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                      <div className={`p-3 rounded-2xl text-xs leading-relaxed max-w-[85%] ${m.role === "user" ? "bg-secondary-container text-on-secondary-container font-medium" : "bg-white/10 text-white"}`}>
+                        {m.content}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Digite sua dúvida..."
+                    className="w-full bg-white/10 border border-white/20 rounded-full py-3 pl-4 pr-12 text-sm text-white placeholder-white/40 focus:outline-none focus:bg-white/20 transition-all"
+                  />
+                  <button 
+                    onClick={handleSendMessage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+                  >
+                    <Send size={14} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="absolute -bottom-10 -right-10 opacity-10">
+                <MessageSquare size={180} />
+              </div>
+            </div>
+
+            <div className="mt-8 bg-surface-container p-6 rounded-2xl border border-surface-border">
+              <h4 className="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                <Info size={14} /> Dicas de Suporte
+              </h4>
+              <ul className="text-[11px] text-on-surface-variant space-y-2">
+                <li>• Pergunte sobre prazos de matrícula.</li>
+                <li>• Tire dúvidas sobre a "Regra de Ouro".</li>
+                <li>• Saiba como solicitar remanejamento.</li>
+              </ul>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Gemini Chat Sidebar/Modal */}
-      <AnimatePresence>
-        {chatOpen && (
-          <motion.div 
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            className="fixed inset-y-0 right-0 w-full max-w-md glass z-50 shadow-2xl flex flex-col border-l border-white/10"
-          >
-            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-brand-ep-light/10">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-brand-ep-light rounded-full flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm">Assistente Clovis</h4>
-                  <span className="text-[10px] text-brand-ep-light font-bold uppercase tracking-widest">Online</span>
-                </div>
-              </div>
-              <button onClick={() => setChatOpen(false)} className="text-white/40 hover:text-white"><X /></button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-              {messages.length === 0 && (
-                <div className="text-center py-20 text-white/20">
-                  <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                  <p className="text-sm">Olá! Como posso ajudar com sua matrícula hoje?</p>
-                </div>
-              )}
-              {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm ${m.role === 'user' ? 'bg-brand-ep-light text-white' : 'bg-white/5 text-white/80'}`}>
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-              {chatLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-white/5 p-4 rounded-2xl"><Loader2 className="w-4 h-4 animate-spin opacity-40" /></div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div className="p-6 border-t border-white/5 bg-black/20">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Sua dúvida aqui..."
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-14 outline-none focus:border-brand-ep-light transition-all"
-                />
-                <button 
-                  onClick={handleSendMessage}
-                  className="absolute right-3 top-3 w-10 h-10 bg-brand-ep-light text-white rounded-xl flex items-center justify-center hover:scale-105 transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    </AppLayout>
   );
 }

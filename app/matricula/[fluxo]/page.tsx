@@ -1,14 +1,24 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { processarPerfilCursista, UserVinculo } from "@/services/userService";
 import { efetivarMatricula } from "@/services/registrationService";
+import AppLayout from "@/components/AppLayout";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle, Loader2, ArrowLeft, Filter } from "lucide-react";
+import { 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2, 
+  ArrowLeft, 
+  Filter,
+  Users,
+  Clock,
+  Calendar
+} from "lucide-react";
 
 interface PageProps {
   params: Promise<{ fluxo: string }>;
@@ -96,94 +106,142 @@ export default function MatriculaPage({ params }: PageProps) {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center gap-4 py-20">
-      <Loader2 className="w-12 h-12 text-brand-ep-light animate-spin" />
-      <p className="text-white/60">Processando informações...</p>
+    <div className="flex h-screen items-center justify-center bg-background">
+      <Loader2 className="w-12 h-12 text-primary animate-spin" />
     </div>
-  );
-
-  if (protocolo) return (
-    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass p-12 rounded-3xl text-center max-w-lg mx-auto">
-      <CheckCircle2 className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
-      <h1 className="text-3xl font-bold mb-2">Matrícula Realizada!</h1>
-      <p className="text-white/60 mb-8">Sua inscrição no fluxo {fluxoSolicitado} foi confirmada.</p>
-      <button onClick={() => router.push("/dashboard")} className="btn-secondary w-full">Voltar ao Início</button>
-    </motion.div>
   );
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-6">
-      <header className="flex items-center justify-between mb-8">
-        <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm">
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </button>
-        <div className="text-right">
-          <h1 className="text-2xl font-bold">Matrícula {fluxoSolicitado}</h1>
-          <p className="text-sm text-white/40">{perfil[0]?.EstabExeNome}</p>
-        </div>
-      </header>
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-6 rounded-2xl mb-8 flex gap-4 items-center">
-          <AlertCircle className="w-6 h-6 shrink-0" />
-          <p>{error}</p>
-        </div>
-      )}
-
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6">
-          <div className="glass p-6 rounded-2xl">
-            <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Filter className="w-3 h-3" /> Perfil Identificado
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] text-white/30 uppercase">Modalidade</p>
-                <p className="font-medium text-brand-ep-light">{perfil[0]?.modalidade_calc}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-white/30 uppercase">Ano Formativo</p>
-                <p className="font-medium text-brand-pedfor-blue">{perfil[0]?.ano_formativo_calc}</p>
-              </div>
-            </div>
+    <AppLayout>
+      <div className="max-w-5xl mx-auto space-y-8">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-primary font-bold text-sm mb-2 hover:underline">
+              <ArrowLeft size={16} /> Voltar ao Dashboard
+            </button>
+            <h1 className="text-3xl font-bold text-primary">Matrícula {fluxoSolicitado}</h1>
+            <p className="text-on-surface-variant">{perfil[0]?.EstabExeNome}</p>
           </div>
-        </div>
+          <div className="bg-surface-container px-6 py-3 rounded-2xl border border-surface-border">
+            <p className="text-[10px] uppercase font-bold text-primary opacity-60">Status</p>
+            <p className="font-bold text-primary">Janela Aberta - 2026</p>
+          </div>
+        </header>
 
-        <div className="lg:col-span-2">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-3">Turmas Disponíveis</h2>
-          {turmas.length === 0 ? (
-            <div className="glass p-12 rounded-3xl text-center text-white/40">Nenhuma turma disponível.</div>
+        <AnimatePresence>
+          {protocolo ? (
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-surface-container-lowest p-12 rounded-[2rem] text-center shadow-xl border border-surface-border">
+              <CheckCircle2 className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
+              <h2 className="text-3xl font-bold text-primary mb-2">Matrícula Realizada!</h2>
+              <p className="text-on-surface-variant mb-8 max-w-md mx-auto">Sua inscrição no fluxo {fluxoSolicitado} foi confirmada com sucesso. Você receberá o comprovante em seu e-mail institucional.</p>
+              
+              <div className="bg-surface-container p-6 rounded-2xl mb-8 max-w-sm mx-auto">
+                <p className="text-xs uppercase font-bold text-primary opacity-40 mb-1">ID da Matrícula</p>
+                <p className="text-2xl font-mono font-bold text-primary tracking-wider">{protocolo}</p>
+              </div>
+
+              <button onClick={() => router.push("/dashboard")} className="btn-primary px-12 py-3 rounded-full">
+                Ir para o Dashboard
+              </button>
+            </motion.div>
           ) : (
-            <div className="space-y-4">
-              {turmas.map((t: any) => (
-                <div 
-                  key={t.id}
-                  onClick={() => setSelectedTurma(t.id)}
-                  className={`glass p-6 rounded-2xl cursor-pointer transition-all border-2 ${selectedTurma === t.id ? 'border-brand-ep-light bg-brand-ep-light/5' : 'border-transparent hover:bg-white/5'}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold text-lg">{t.nome_turma_matricula}</h4>
-                      <p className="text-sm text-white/50">{t.formador}</p>
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Sidebar Info */}
+              <div className="lg:col-span-1 space-y-6">
+                <div className="bg-surface-container-lowest p-6 rounded-[2rem] border border-surface-border shadow-sm">
+                  <h3 className="text-sm font-bold text-primary uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <Filter size={16} /> Perfil do Servidor
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="bg-surface-container-low p-4 rounded-xl">
+                      <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Modalidade</p>
+                      <p className="font-bold text-primary">{perfil[0]?.modalidade_calc}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-brand-ep-light">{t.vagas}</p>
-                      <p className="text-[10px] text-white/30 uppercase">vagas</p>
+                    <div className="bg-surface-container-low p-4 rounded-xl">
+                      <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Ano Formativo</p>
+                      <p className="font-bold text-secondary">{perfil[0]?.ano_formativo_calc}</p>
+                    </div>
+                    <div className="bg-surface-container-low p-4 rounded-xl">
+                      <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Componente</p>
+                      <p className="font-bold">{perfil[0]?.componente_matriz}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+
+                <div className="p-6 rounded-2xl bg-secondary-container/20 border border-secondary-container/40 text-on-secondary-container text-xs leading-relaxed">
+                  <p><strong>Atenção:</strong> Escolha com cuidado. O sistema permite apenas uma matrícula ativa por ciclo formativo.</p>
+                </div>
+              </div>
+
+              {/* Turmas List */}
+              <div className="lg:col-span-2 space-y-6">
+                {error && (
+                  <div className="bg-error-container text-on-error-container p-4 rounded-2xl flex gap-3 items-center">
+                    <AlertCircle size={20} />
+                    <p className="text-sm font-medium">{error}</p>
+                  </div>
+                )}
+
+                <h2 className="text-xl font-bold text-primary flex items-center gap-3 px-2">
+                  Opções Disponíveis
+                  <span className="bg-primary-container text-on-primary-container text-[10px] px-3 py-1 rounded-full font-bold">{turmas.length} TURMAS</span>
+                </h2>
+
+                <div className="space-y-4">
+                  {turmas.length === 0 ? (
+                    <div className="bg-surface-container-lowest p-12 rounded-[2rem] text-center border-2 border-dashed border-surface-border text-on-surface-variant">
+                      Não encontramos turmas compatíveis para o seu perfil no momento.
+                    </div>
+                  ) : (
+                    turmas.map(t => (
+                      <motion.div 
+                        key={t.id}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => setSelectedTurma(t.id)}
+                        className={`bg-surface-container-lowest p-6 rounded-[2rem] cursor-pointer transition-all border-2 ${selectedTurma === t.id ? 'border-primary shadow-lg' : 'border-transparent hover:border-surface-border'}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="font-bold text-xl text-primary">{t.nome_turma_matricula}</h4>
+                              <p className="text-on-surface-variant flex items-center gap-2 mt-1">
+                                <Users size={14} /> Formador: {t.formador}
+                              </p>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              <span className="bg-surface-container px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1">
+                                <Calendar size={10} /> {t.dia_semana}
+                              </span>
+                              <span className="bg-surface-container px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1">
+                                <Clock size={10} /> {t.horario_ini} - {t.turno}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right bg-primary/5 p-4 rounded-2xl min-w-[80px]">
+                            <p className="text-3xl font-black text-primary">{t.vagas}</p>
+                            <p className="text-[10px] uppercase font-bold text-primary opacity-40">vagas</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+
+                <div className="pt-8">
+                  <button
+                    onClick={handleMatricula}
+                    disabled={!selectedTurma || loading}
+                    className="w-full py-5 bg-primary text-on-primary font-bold rounded-full shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-3"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : "Confirmar Minha Inscrição"}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
-          <button
-            onClick={handleMatricula}
-            disabled={!selectedTurma || loading}
-            className="btn-primary w-full mt-8 disabled:opacity-50"
-          >
-            {loading ? "Processando..." : "Confirmar Inscrição"}
-          </button>
-        </div>
+        </AnimatePresence>
       </div>
-    </div>
+    </AppLayout>
   );
 }
