@@ -68,8 +68,8 @@ export default function LoginPage() {
 
         <div className="p-10 space-y-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-primary mb-2">Sistema de Matrículas</h1>
-            <p className="text-on-surface-variant text-sm">Gestão Integrada EP & PEDFOR</p>
+            <h1 className="text-2xl font-bold text-primary mb-2">SGM - Portal de Matrículas</h1>
+            <p className="text-on-surface-variant text-[10px] uppercase font-black tracking-widest opacity-60">Gestão Integrada CFDEG</p>
           </div>
 
           {error && (
