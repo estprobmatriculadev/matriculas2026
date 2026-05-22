@@ -28,8 +28,12 @@ export interface RemanejamentoRequest {
 
 export const solicitarRemanejamento = async (data: any) => {
   try {
+    const sanitizedData = Object.fromEntries(
+      Object.entries(data).filter(([, value]) => value !== undefined)
+    );
+
     const docRef = await addDoc(collection(db, "remanejamentos"), {
-      ...data,
+      ...sanitizedData,
       status: "PENDENTE",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()

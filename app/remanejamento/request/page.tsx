@@ -94,11 +94,16 @@ export default function RequestRemanejamentoPage() {
   }, [router]);
 
   const handleSubmit = async () => {
+    if (!matricula?.id) {
+      setError("Não foi possível identificar sua matrícula. Tente novamente ou contate a secretaria.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await solicitarRemanejamento({
         ...formData,
-        matriculaId: matricula?.id,
+        matriculaId: matricula.id,
         cursistaEmail: auth.currentUser?.email || "",
         status: "PENDENTE"
       });
