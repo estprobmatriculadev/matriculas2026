@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { User } from "firebase/auth";
 
 export interface UserVinculo {
@@ -30,7 +30,52 @@ export const syncUserSession = async (user: User) => {
     return { role: "CURSISTA" };
   } else {
     await setDoc(userRef, userData, { merge: true });
-    return userSnap.data() as { role: string };
+    return userSnap.data() as { role: string; tutorariosIds?: string[] };
+  }
+};
+
+export const getTutoriariosMatriculas = async (tutorEmail: string) => {
+  try {
+    const tutorRef = doc(db, "users", tutorEmail.toLowerCase());
+    const tutorSnap = await getDoc(tutorRef);
+    
+    if (!tutorSnap.exists() || tutorSnap.data().role !== "TUTOR") {
+      throw new Error("Usuário não é um TUTOR válido");
+    }
+    
+    const tutorariosIds: string[] = tutorSnap.data().tutorariosIds || [];
+    if (tutorariosIds.length === 0) {
+      return [];
+    }
+
+    // Buscar matrículas de todos os cursistas que este tutor acompanha
+    const matriculasRef = collection(db, "matriculas");
+    
+    const querySnapshots = await Promise.all(
+      tutorariosIds.map((cursistaNome: string) =>
+        getDocs(query(
+          matriculasRef,
+          where("cursistaNome", "==", cursistaNome),
+          orderBy("createdAt", "desc")
+        ))
+      )
+    );
+
+    const matriculas: any[] = [];
+    querySnapshots.forEach((snap, index) => {
+      snap.docs.forEach((doc: any) => {
+        matriculas.push({
+          id: doc.id,
+          ...doc.data(),
+          tutoriarioNome: tutorariosIds[index]
+        });
+      });
+    });
+
+    return matriculas;
+  } catch (error) {
+    console.error("Erro ao buscar matrículas dos tutorados:", error);
+    return [];
   }
 };
 

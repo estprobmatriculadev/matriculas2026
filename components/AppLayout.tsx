@@ -43,13 +43,22 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
   }, [router]);
 
   const menuItems = [
-    { name: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
+    { name: "Dashboard", icon: <LayoutDashboard size={20} />, path: userRole === "TUTOR" ? "/tutor" : "/dashboard" },
     { name: "Documentos", icon: <FileText size={20} />, path: "/documentos" },
     { name: "Remanejamento", icon: <ArrowRightLeft size={20} />, path: userRole === "CURSISTA" ? "/remanejamento/request" : "/tecnico/remanejamento" },
   ];
 
   if (userRole === "ADMIN" || userRole === "TECNICO") {
     menuItems.push({ name: "Importar Dados", icon: <Database size={20} />, path: "/tecnico/import" });
+  }
+
+  // Remover Remanejamento e Documentos para TUTOR
+  if (userRole === "TUTOR") {
+    const filteredItems = menuItems.filter(item => 
+      item.name !== "Remanejamento" && item.name !== "Documentos"
+    );
+    menuItems.length = 0;
+    menuItems.push(...filteredItems);
   }
 
   const handleLogout = async () => {
