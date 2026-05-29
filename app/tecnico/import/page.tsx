@@ -16,8 +16,10 @@ import {
   Loader2, 
   Database,
   Table,
-  ArrowRight
+  ArrowRight,
+  Download
 } from "lucide-react";
+import { generateCursistasTemplate, generateTurmasTemplate, downloadCSV } from "@/services/csvTemplateService";
 
 export default function ImportPage() {
   const [data, setData] = useState<any[]>([]);
@@ -25,6 +27,21 @@ export default function ImportPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  const handleDownloadTemplate = () => {
+    let csv = "";
+    let filename = "";
+    
+    if (type === "cursistas") {
+      csv = generateCursistasTemplate();
+      filename = "template_cursistas_2026.csv";
+    } else {
+      csv = generateTurmasTemplate();
+      filename = "template_turmas_2026.csv";
+    }
+    
+    downloadCSV(csv, filename);
+  };
 
   const handleFileUpload = (e: any) => {
     const file = e.target.files[0];
@@ -109,7 +126,7 @@ export default function ImportPage() {
                 Selecione o arquivo com as colunas padrão para importar para a coleção <span className="font-bold text-primary uppercase">{type}</span>.
               </p>
               
-              <label className="block">
+              <label className="block mb-4">
                 <span className="sr-only">Escolher arquivo</span>
                 <input 
                   type="file" 
@@ -124,6 +141,13 @@ export default function ImportPage() {
                     cursor-pointer"
                 />
               </label>
+
+              <button 
+                onClick={handleDownloadTemplate}
+                className="w-full py-2.5 px-4 bg-surface-container text-on-surface font-bold rounded-full flex items-center justify-center gap-2 hover:bg-surface-container-high transition-all text-xs"
+              >
+                <Download size={16} /> Baixar Template
+              </button>
             </div>
 
             <div className="bg-surface-container p-6 rounded-2xl border border-surface-border">
