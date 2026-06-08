@@ -62,11 +62,7 @@ export default function ImportPage() {
           return;
         }
         setUserRole(role);
-        if (role === "ADMIN") {
-          setType("cursistas");
-        } else {
-          setType("turmas");
-        }
+        setType("turmas");
       } catch (err) {
         console.error(err);
       }
@@ -199,24 +195,8 @@ export default function ImportPage() {
       <div className="max-w-5xl mx-auto space-y-8">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Importação de Dados</h1>
-            <p className="text-on-surface-variant">Atualize a base de dados via arquivo CSV.</p>
-          </div>
-          <div className="flex bg-surface-container p-1 rounded-2xl border border-surface-border">
-            {userRole === "ADMIN" && (
-              <button 
-                onClick={() => { setType("cursistas"); setData([]); }}
-                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${type === "cursistas" ? "bg-primary text-on-primary shadow-lg" : "text-primary hover:bg-primary/5"}`}
-              >
-                Cursistas
-              </button>
-            )}
-            <button 
-              onClick={() => { setType("turmas"); setData([]); }}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${type === "turmas" ? "bg-primary text-on-primary shadow-lg" : "text-primary hover:bg-primary/5"}`}
-            >
-              Turmas
-            </button>
+            <h1 className="text-3xl font-bold text-primary">Importação de Turmas</h1>
+            <p className="text-on-surface-variant">Atualize a base de turmas via arquivo CSV.</p>
           </div>
         </header>
 
