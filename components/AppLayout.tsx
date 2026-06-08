@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { 
   LayoutDashboard, 
   FileText, 
@@ -31,6 +32,31 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [user, setUser] = useState<any>(null);
 
+  // Notifications State
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showBellMenu, setShowBellMenu] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+  const [pushPermission, setPushPermission] = useState<string>("default");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setPushPermission(Notification.permission);
+    }
+  }, []);
+
+  const requestBrowserNotification = async () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      const permission = await Notification.requestPermission();
+      setPushPermission(permission);
+      if (permission === "granted") {
+        new Notification("Portal CFDEG", {
+          body: "As notificações de área de trabalho foram ativadas com sucesso!",
+          icon: "https://www.educacao.pr.gov.br/sites/default/arquivos_restritos/files/imagem/2025-07/estagio-probatorio690x311.png"
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (!user) {
@@ -42,8 +68,61 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
     return () => unsubscribe();
   }, [router]);
 
+  useEffect(() => {
+    if (!user?.email) return;
+
+    let q;
+    if (userRole === "CURSISTA") {
+      q = query(
+        collection(db, "remanejamentos"),
+        where("cursistaEmail", "==", user.email.toLowerCase())
+      );
+    } else {
+      q = query(
+        collection(db, "remanejamentos"),
+        where("status", "==", "PENDENTE")
+      );
+    }
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+      // Sort in-memory to avoid Firestore index requirements
+      const sortedDocs = [...snap.docs].sort((a, b) => {
+        const aTime = a.data().createdAt?.seconds || 0;
+        const bTime = b.data().createdAt?.seconds || 0;
+        return bTime - aTime;
+      }).slice(0, 5);
+
+      const list = sortedDocs.map(doc => {
+        const data = doc.data();
+        let text = "";
+        let time = data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000).toLocaleTimeString() : "";
+        if (userRole === "CURSISTA") {
+          text = `Sua solicitação de remanejamento para modalidade/turma está com status: ${data.status}`;
+        } else {
+          text = `Nova solicitação pendente de ${data.nomeCompleto || data.cursistaNome || "Cursista"}`;
+        }
+        return {
+          id: doc.id,
+          text,
+          time,
+          status: data.status
+        };
+      });
+      setNotifications(list);
+      if (list.length > 0) {
+        setHasUnread(true);
+      } else {
+        setHasUnread(false);
+      }
+    }, (err) => {
+      console.error("Firestore listener error:", err);
+    });
+
+    return () => unsubscribe();
+  }, [user, userRole]);
+
   const menuItems = [
-    { name: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
+    { name: "Início", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
     { name: "Documentos", icon: <FileText size={20} />, path: "/documentos" },
     { name: "Remanejamento", icon: <ArrowRightLeft size={20} />, path: userRole === "CURSISTA" ? "/remanejamento/request" : "/tecnico/remanejamento" },
   ];
@@ -72,13 +151,17 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
         className={`${isSidebarOpen ? "w-72" : "w-20"} bg-surface-container-low border-r border-surface-border transition-all duration-300 ease-in-out flex flex-col z-50`}
       >
         <div className="p-6 flex items-center gap-4 border-b border-surface-border bg-primary/5">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
-            <ShieldCheck className="text-on-primary" size={24} />
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/20 overflow-hidden">
+            <img 
+              src="https://www.educacao.pr.gov.br/sites/default/arquivos_restritos/files/imagem/2025-07/estagio-probatorio690x311.png" 
+              alt="Logo CFDEG" 
+              className="w-full h-full object-contain p-1"
+            />
           </div>
           {isSidebarOpen && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col">
-              <span className="font-black text-primary text-xl tracking-tighter">SGM</span>
-              <span className="text-[9px] uppercase font-black text-on-surface-variant tracking-tight opacity-80 leading-tight">MATRÍCULAS E GESTÃO CFDEG</span>
+              <span className="font-black text-primary text-lg tracking-tighter leading-none">CFDEG</span>
+              <span className="text-[8px] uppercase font-black text-on-surface-variant tracking-tight opacity-80 leading-tight mt-1">PORTAL DE MATRÍCULAS E GESTÃO</span>
             </motion.div>
           )}
         </div>
@@ -136,10 +219,95 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="p-2.5 text-on-surface-variant hover:bg-surface-container-high rounded-full relative transition-all">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full border-2 border-surface-container-lowest"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowBellMenu(!showBellMenu)}
+                className="p-2.5 text-on-surface-variant hover:bg-surface-container-high rounded-full relative transition-all"
+              >
+                <Bell size={20} />
+                {hasUnread && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full border-2 border-surface-container-lowest"></span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showBellMenu && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface-container-lowest border border-surface-border rounded-2xl shadow-xl z-50 overflow-hidden"
+                  >
+                    <div className="px-5 py-4 border-b border-surface-border bg-surface-container-low flex justify-between items-center animate-none">
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider">Notificações</span>
+                      {hasUnread && (
+                        <button 
+                          onClick={() => setHasUnread(false)} 
+                          className="text-[10px] text-primary hover:underline font-bold"
+                        >
+                          Marcar como lidas
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="divide-y divide-surface-border max-h-60 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-on-surface-variant italic">
+                          Nenhuma notificação no momento.
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div 
+                            key={notif.id} 
+                            onClick={() => {
+                              setShowBellMenu(false);
+                              if (userRole === "CURSISTA") {
+                                router.push("/remanejamento/request");
+                              } else {
+                                router.push("/tecnico/remanejamento");
+                              }
+                            }}
+                            className="px-5 py-3 hover:bg-surface-container-high transition-colors cursor-pointer text-left"
+                          >
+                            <p className="text-xs text-on-surface leading-normal">{notif.text}</p>
+                            <span className="text-[9px] text-on-surface-variant opacity-60 font-bold block mt-1">{notif.time}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-4 bg-primary/5 border-t border-surface-border flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-primary uppercase">Notificações no Navegador</span>
+                        <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                          pushPermission === "granted" ? "bg-emerald-500/10 text-emerald-600" :
+                          pushPermission === "denied" ? "bg-red-500/10 text-red-600" :
+                          "bg-amber-500/10 text-amber-600"
+                        }`}>
+                          {pushPermission === "granted" ? "Ativo" : pushPermission === "denied" ? "Bloqueado" : "Pendente"}
+                        </span>
+                      </div>
+
+                      {pushPermission === "default" && (
+                        <button
+                          onClick={requestBrowserNotification}
+                          className="w-full py-2 bg-primary text-on-primary text-[10px] font-black rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
+                        >
+                          Ativar Notificações Push
+                        </button>
+                      )}
+
+                      {pushPermission === "denied" && (
+                        <div className="text-[10px] text-on-surface-variant leading-relaxed bg-surface-container p-3 rounded-lg border border-surface-border text-left">
+                          <span className="font-bold text-primary block mb-1">Como ativar:</span>
+                          Clique no ícone de cadeado/configurações ao lado da URL no seu navegador e ative a permissão de "Notificações". Depois recarregue a página.
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <div className="h-10 w-[1px] bg-surface-border mx-2"></div>
 

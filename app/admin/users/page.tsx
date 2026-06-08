@@ -84,6 +84,26 @@ export default function AdminUsersPage() {
     return () => unsubscribe();
   }, []);
 
+  const downloadCSVTemplate = (t: "users" | "cursistas") => {
+    let headers = "";
+    let filename = "";
+    if (t === "users") {
+      headers = "user;nome;cpf;rg;email;telefone\n";
+      filename = "modelo_users.csv";
+    } else {
+      headers = "user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone\n";
+      filename = "modelo_cursistas.csv";
+    }
+    const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Handlers
   const handleCreateUserManual = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -369,6 +389,23 @@ export default function AdminUsersPage() {
                   : "Importe estudantes no formato de modelo_cursistas.csv (user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone)."
                 }
               </p>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button 
+                  type="button"
+                  onClick={() => downloadCSVTemplate("users")}
+                  className="px-4 py-2 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded-full hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-1.5"
+                >
+                  <FileSpreadsheet size={12} /> Modelo CSV Usuários
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => downloadCSVTemplate("cursistas")}
+                  className="px-4 py-2 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded-full hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-1.5"
+                >
+                  <FileSpreadsheet size={12} /> Modelo CSV Cursistas
+                </button>
+              </div>
 
               <label className="block mb-6 cursor-pointer">
                 <input 

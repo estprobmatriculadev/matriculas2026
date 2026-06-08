@@ -119,7 +119,7 @@ export default function MatriculaPage({ params }: PageProps) {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-primary font-bold text-sm mb-2 hover:underline">
-              <ArrowLeft size={16} /> Voltar ao Dashboard
+              <ArrowLeft size={16} /> Voltar ao Início
             </button>
             <h1 className="text-3xl font-bold text-primary">Matrícula {fluxoSolicitado}</h1>
             <p className="text-on-surface-variant">{perfil[0]?.EstabExeNome}</p>
@@ -143,7 +143,7 @@ export default function MatriculaPage({ params }: PageProps) {
               </div>
 
               <button onClick={() => router.push("/dashboard")} className="btn-primary px-12 py-3 rounded-full">
-                Ir para o Dashboard
+                Ir para o Início
               </button>
             </motion.div>
           ) : (

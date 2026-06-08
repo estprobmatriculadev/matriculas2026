@@ -148,7 +148,7 @@ export default function RequestRemanejamentoPage() {
       <div className="max-w-4xl mx-auto space-y-8 pb-20">
         <header>
           <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-primary font-bold text-sm mb-4 hover:underline">
-            <ArrowLeft size={16} /> Voltar ao Dashboard
+            <ArrowLeft size={16} /> Voltar ao Início
           </button>
           <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
             <ArrowRightLeft className="text-secondary" />

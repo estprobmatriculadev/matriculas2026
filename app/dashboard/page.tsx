@@ -73,8 +73,13 @@ export default function DashboardPage() {
   }, [router]);
 
   const handleSaveDate = async (id: string) => {
-    await setDoc(doc(db, "dates", id), editForm, { merge: true });
-    setEditingDate(null);
+    try {
+      await setDoc(doc(db, "dates", id), editForm, { merge: true });
+      setEditingDate(null);
+    } catch (err: any) {
+      console.error(err);
+      alert("Erro ao atualizar data: " + err.message);
+    }
   };
 
   const handleAddDate = async (e: React.FormEvent) => {
@@ -90,8 +95,9 @@ export default function DashboardPage() {
       });
       setNewDateForm({ dia: "", mes: "", titulo: "", desc: "" });
       setShowAddForm(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Erro ao salvar data: " + err.message);
     }
   };
 
@@ -99,8 +105,9 @@ export default function DashboardPage() {
     if (!confirm("Deseja realmente excluir esta data?")) return;
     try {
       await deleteDoc(doc(db, "dates", id));
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Erro ao excluir data: " + err.message);
     }
   };
 

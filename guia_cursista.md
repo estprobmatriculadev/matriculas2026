@@ -12,7 +12,7 @@
 
 ### 3. Solicitação de Remanejamento
 Caso precise trocar de turma após a matrícula:
-*   Acesse seu Dashboard.
+*   Acesse a página de Início.
 *   Clique em "Solicitar Troca".
 *   Escolha a nova turma e escreva uma justificativa.
 *   Aguarde a análise do setor técnico (Você será notificado via portal).

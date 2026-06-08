@@ -74,6 +74,26 @@ export default function ImportPage() {
     init();
   }, [router]);
 
+  const downloadCSVTemplate = (t: "turmas" | "cursistas") => {
+    let headers = "";
+    let filename = "";
+    if (t === "turmas") {
+      headers = "turma;cod_curso;curso_sere;cod_disciplina;disc_sere;componente;cod_turma_sere;ano_formativo;id_turma;turno;dia;inicio;fim\n";
+      filename = "modelo_turmas.csv";
+    } else {
+      headers = "user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone\n";
+      filename = "modelo_cursistas.csv";
+    }
+    const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleFileUpload = (e: any) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -216,9 +236,16 @@ export default function ImportPage() {
                 <Upload size={32} />
               </div>
               <h3 className="font-bold text-primary mb-2">Upload de CSV</h3>
-              <p className="text-xs text-on-surface-variant mb-6 leading-relaxed">
+              <p className="text-xs text-on-surface-variant mb-4 leading-relaxed">
                 Selecione o arquivo com as colunas padrão para importar para a coleção <span className="font-bold text-primary uppercase">{type}</span>.
               </p>
+              
+              <button 
+                onClick={() => downloadCSVTemplate(type)}
+                className="mb-6 px-4 py-2 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded-full hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-1.5"
+              >
+                <FileSpreadsheet size={12} /> Baixar Modelo CSV de {type === "turmas" ? "Turmas" : "Cursistas"}
+              </button>
               
               <label className="block">
                 <span className="sr-only">Escolher arquivo</span>
