@@ -29,7 +29,6 @@ export default function DocumentosPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   
   // Doc Upload Form
   const [newDoc, setNewDoc] = useState({ titulo: "", url: "", categoria: "Geral" });
@@ -52,11 +51,9 @@ export default function DocumentosPage() {
     };
     init();
 
-    setSyncing(true);
     const unsubscribe = onSnapshot(query(collection(db, "documentos"), orderBy("createdAt", "desc")), (snap) => {
       setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
-      setSyncing(false);
     });
 
     return () => unsubscribe();
@@ -110,14 +107,7 @@ export default function DocumentosPage() {
         <header className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-primary">Documentos e Suporte</h1>
-            <p className="text-on-surface-variant flex items-center gap-2">
-              Editais, manuais e atendimento inteligente.
-              {syncing && (
-                <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="inline-block">
-                  <Sparkles size={14} className="text-amber-400" />
-                </motion.span>
-              )}
-            </p>
+            <p className="text-on-surface-variant">Editais, manuais e atendimento inteligente.</p>
           </div>
           <button 
             onClick={() => setShowSupport(true)}

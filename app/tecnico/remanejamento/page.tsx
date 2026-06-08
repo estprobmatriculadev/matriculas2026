@@ -3,7 +3,8 @@ export const dynamic = "force-dynamic";
 
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import { db, auth } from "@/lib/firebase";
 import { 
   collection, 
   query, 
@@ -13,6 +14,7 @@ import {
 } from "firebase/firestore";
 import AppLayout from "@/components/AppLayout";
 import { processarSolicitacaoRemanejamento } from "@/services/remanejamentoService";
+import { syncUserSession } from "@/services/userService";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckCircle2, 
@@ -27,10 +29,33 @@ import {
 } from "lucide-react";
 
 export default function TecnicoRemanejamentoPage() {
+  const router = useRouter();
+  const [userRole, setUserRole] = useState<string>("TECNICO");
   const [solicitacoes, setSolicitacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("PENDENTE");
   const [processing, setProcessing] = useState<string | null>(null);
+
+  useEffect(() => {
+    const init = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      try {
+        const { role } = await syncUserSession(user);
+        if (role === "CURSISTA") {
+          router.push("/dashboard");
+          return;
+        }
+        setUserRole(role);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    init();
+  }, [router]);
 
   useEffect(() => {
     const q = query(
@@ -57,7 +82,7 @@ export default function TecnicoRemanejamentoPage() {
   };
 
   return (
-    <AppLayout userRole="ADMIN">
+    <AppLayout userRole={userRole}>
       <div className="max-w-6xl mx-auto space-y-8">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
@@ -109,15 +134,15 @@ export default function TecnicoRemanejamentoPage() {
                       <div className="md:col-span-1 border-r border-surface-border pr-6">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center text-primary font-bold text-sm">
-                            {s.cursistaNome.charAt(0)}
+                            {(s.nomeCompleto || s.cursistaNome || "C").charAt(0)}
                           </div>
                           <div>
-                            <p className="font-bold text-primary truncate max-w-[150px]">{s.cursistaNome}</p>
+                            <p className="font-bold text-primary truncate max-w-[150px]">{s.nomeCompleto || s.cursistaNome}</p>
                             <p className="text-[10px] text-on-surface-variant">{s.cursistaEmail}</p>
                           </div>
                         </div>
                         <div className="bg-surface-container-low px-3 py-1 rounded-full inline-block">
-                          <span className="text-[9px] font-black text-primary uppercase">{s.fluxo}</span>
+                          <span className="text-[9px] font-black text-primary uppercase">{s.fluxo || "EP"}</span>
                         </div>
                       </div>
 
@@ -126,14 +151,28 @@ export default function TecnicoRemanejamentoPage() {
                         <div className="text-center">
                           <p className="text-[10px] uppercase font-bold text-on-surface-variant mb-1">Origem</p>
                           <div className="bg-surface-container px-4 py-2 rounded-xl border border-surface-border">
-                            <p className="font-bold text-primary text-xs">{s.turmaOrigemNome}</p>
+                            <p className="font-bold text-primary text-xs">
+                              {s.tipoAlteracao === "Turma (horário)"
+                                ? `${s.atComponente || "Turma Atual"} (${s.atHorarioAtual || "Horário Atual"})`
+                                : s.tipoAlteracao === "Modalidade"
+                                  ? s.amModalidadeAtual || "Modalidade Atual"
+                                  : s.padroesEstagio || "Vínculo Atual"
+                              }
+                            </p>
                           </div>
                         </div>
                         <ArrowRight className="text-primary opacity-30 mt-4" size={24} />
                         <div className="text-center">
                           <p className="text-[10px] uppercase font-bold text-primary mb-1">Destino</p>
                           <div className="bg-primary/5 px-4 py-2 rounded-xl border border-primary/20">
-                            <p className="font-bold text-primary text-xs">{s.turmaDestinoNome}</p>
+                            <p className="font-bold text-primary text-xs">
+                              {s.tipoAlteracao === "Turma (horário)"
+                                ? s.atHorarioPretendido || "Horário Pretendido"
+                                : s.tipoAlteracao === "Modalidade"
+                                  ? s.amModalidadeDestino || "Modalidade Destino"
+                                  : "Ajuste solicitado"
+                              }
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -145,9 +184,9 @@ export default function TecnicoRemanejamentoPage() {
                             <button 
                               onClick={() => handleProcessar(s.id, "DEFERIDO")}
                               disabled={!!processing}
-                              className="flex-1 bg-primary text-on-primary py-3 rounded-2xl text-[10px] font-bold uppercase tracking-wider hover:bg-primary-container transition-all active:scale-95 disabled:opacity-30"
+                              className="flex-1 bg-primary text-on-primary py-3 rounded-2xl text-[10px] font-bold uppercase tracking-wider hover:bg-primary-container transition-all active:scale-95 disabled:opacity-30 flex items-center justify-center"
                             >
-                              {processing === s.id ? <Loader2 className="animate-spin mx-auto" /> : "Deferir"}
+                              {processing === s.id ? <Loader2 className="animate-spin" size={14} /> : "Deferir"}
                             </button>
                             <button 
                               onClick={() => handleProcessar(s.id, "INDEFERIDO")}
@@ -162,15 +201,23 @@ export default function TecnicoRemanejamentoPage() {
                             {filter}
                           </div>
                         )}
-                        <p className="text-[9px] text-center text-on-surface-variant italic">Solicitado em: {new Date(s.createdAt?.seconds * 1000).toLocaleString()}</p>
+                        <p className="text-[9px] text-center text-on-surface-variant italic">
+                          Solicitado em: {s.createdAt?.seconds ? new Date(s.createdAt.seconds * 1000).toLocaleString() : "A definir"}
+                        </p>
                       </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-surface-border">
                       <p className="text-xs text-on-surface-variant flex items-start gap-2">
                         <AlertCircle size={14} className="shrink-0 mt-0.5 text-primary opacity-40" />
-                        <strong>Justificativa:</strong> {s.justificativa || "Sem justificativa informada."}
+                        <strong>Justificativa:</strong> {s.atJustificativa || s.justificativa || "Sem justificativa informada."}
                       </p>
+                      {s.comprovanteUrl && (
+                        <p className="text-xs text-on-surface-variant mt-2 flex items-center gap-2">
+                          <CheckCircle2 size={14} className="text-emerald-500" />
+                          <strong>Documento Anexo:</strong> <a href={s.comprovanteUrl} target="_blank" className="text-primary underline font-bold">Visualizar no Google Drive</a>
+                        </p>
+                      )}
                     </div>
                   </motion.div>
                 ))
@@ -182,3 +229,4 @@ export default function TecnicoRemanejamentoPage() {
     </AppLayout>
   );
 }
+

@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy, limit, doc, setDoc, onSnapshot } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit, doc, setDoc, onSnapshot, addDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import AppLayout from "@/components/AppLayout";
 import { motion } from "framer-motion";
 import { 
@@ -17,7 +17,8 @@ import {
   AlertCircle,
   Edit2,
   Save,
-  Clock
+  Clock,
+  Trash
 } from "lucide-react";
 import { syncUserSession } from "@/services/userService";
 
@@ -29,6 +30,8 @@ export default function DashboardPage() {
   const [dates, setDates] = useState<any[]>([]);
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ dia: "", mes: "", titulo: "", desc: "" });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newDateForm, setNewDateForm] = useState({ dia: "", mes: "", titulo: "", desc: "" });
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -72,6 +75,33 @@ export default function DashboardPage() {
   const handleSaveDate = async (id: string) => {
     await setDoc(doc(db, "dates", id), editForm, { merge: true });
     setEditingDate(null);
+  };
+
+  const handleAddDate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDateForm.dia || !newDateForm.mes || !newDateForm.titulo) return;
+    try {
+      await addDoc(collection(db, "dates"), {
+        dia: newDateForm.dia.toUpperCase(),
+        mes: newDateForm.mes.toUpperCase(),
+        titulo: newDateForm.titulo,
+        desc: newDateForm.desc,
+        createdAt: serverTimestamp()
+      });
+      setNewDateForm({ dia: "", mes: "", titulo: "", desc: "" });
+      setShowAddForm(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteDate = async (id: string) => {
+    if (!confirm("Deseja realmente excluir esta data?")) return;
+    try {
+      await deleteDoc(doc(db, "dates", id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (loading) return (
@@ -189,7 +219,62 @@ export default function DashboardPage() {
               <span className="material-symbols-outlined">calendar_month</span>
               Próximas Datas Importantes
             </h3>
+            {isAdmin && (
+              <button 
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="px-4 py-2 bg-primary text-on-primary text-xs font-bold rounded-xl hover:scale-105 transition-all"
+              >
+                {showAddForm ? "Cancelar" : "Adicionar Data"}
+              </button>
+            )}
           </div>
+
+          {/* Add Date Form */}
+          {isAdmin && showAddForm && (
+            <form onSubmit={handleAddDate} className="p-8 bg-surface-container-low border-b border-surface-border grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-primary uppercase">Dia (ex: 12)</label>
+                <input 
+                  required
+                  className="w-full bg-white border border-surface-border rounded-xl px-4 py-2 text-xs outline-none"
+                  value={newDateForm.dia}
+                  onChange={e => setNewDateForm({...newDateForm, dia: e.target.value})}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-primary uppercase">Mês (ex: JUN)</label>
+                <input 
+                  required
+                  className="w-full bg-white border border-surface-border rounded-xl px-4 py-2 text-xs outline-none"
+                  value={newDateForm.mes}
+                  onChange={e => setNewDateForm({...newDateForm, mes: e.target.value})}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-primary uppercase">Título</label>
+                <input 
+                  required
+                  className="w-full bg-white border border-surface-border rounded-xl px-4 py-2 text-xs outline-none"
+                  value={newDateForm.titulo}
+                  onChange={e => setNewDateForm({...newDateForm, titulo: e.target.value})}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-primary uppercase">Descrição</label>
+                <input 
+                  className="w-full bg-white border border-surface-border rounded-xl px-4 py-2 text-xs outline-none"
+                  value={newDateForm.desc}
+                  onChange={e => setNewDateForm({...newDateForm, desc: e.target.value})}
+                />
+              </div>
+              <div className="md:col-span-4 flex justify-end">
+                <button type="submit" className="px-6 py-2 bg-secondary text-on-secondary text-xs font-bold rounded-xl hover:scale-105 transition-all">
+                  Salvar Nova Data
+                </button>
+              </div>
+            </form>
+          )}
+
           <div className="divide-y divide-surface-border">
             {dates.length === 0 ? (
               <div className="p-8 text-center text-on-surface-variant italic">Nenhuma data cadastrada.</div>
@@ -237,7 +322,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   {isAdmin && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                       {editingDate === date.id ? (
                         <button 
                           onClick={() => handleSaveDate(date.id)}
@@ -246,15 +331,23 @@ export default function DashboardPage() {
                           <Save size={18} />
                         </button>
                       ) : (
-                        <button 
-                          onClick={() => {
-                            setEditingDate(date.id);
-                            setEditForm({ dia: date.dia, mes: date.mes, titulo: date.titulo, desc: date.desc });
-                          }}
-                          className="p-2 bg-primary/10 text-primary rounded-full"
-                        >
-                          <Edit2 size={18} />
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => {
+                              setEditingDate(date.id);
+                              setEditForm({ dia: date.dia, mes: date.mes, titulo: date.titulo, desc: date.desc });
+                            }}
+                            className="p-2 bg-primary/10 text-primary rounded-full"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteDate(date.id)}
+                            className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-full transition-all"
+                          >
+                            <Trash size={18} />
+                          </button>
+                        </>
                       )}
                     </div>
                   )}

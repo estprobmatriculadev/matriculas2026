@@ -1,0 +1,4 @@
+turma;cod_curso;curso_sere;cod_disciplina;disc_sere;componente;cod_turma_sere;ano_formativo;id_turma;turno;dia;inicio;fim
+Turma A - Regular 1º Ano;1001;Ensino Médio Regular;2001;Matemática;MATEMATICA;3001;1º Ano;turma_101;Tarde;Segunda-feira;13:30;15:10
+Turma B - EJA 2º Ano;1002;Educação de Jovens e Adultos (EJA);2002;História;HISTORIA;3002;2º Ano;turma_102;Noite;Terça-feira;19:00;20:40
+Turma C - Profissional 3º Ano;1003;Ensino Médio Técnico Profissionalizante;2003;Geografia;GEOGRAFIA;3003;3º Ano;turma_103;Manhã;Quarta-feira;08:00;09:40

@@ -27,24 +27,9 @@ export const getGeminiResponse = async (userMessage: string, history: { role: st
     // Atualizado para gemini-2.5-flash conforme solicitado
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     
-    // Tentar buscar documentos do contexto se disponível
-    let documentContext = "";
-    try {
-      const docs = await fetch("/api/documentos").then(r => r.json()).catch(() => []);
-      if (docs && docs.length > 0) {
-        const docList = docs
-          .slice(0, 5) // Limitar aos 5 documentos mais recentes
-          .map((d: any) => `- ${d.titulo} (${d.categoria || 'Geral'}): ${d.url}`)
-          .join("\n");
-        documentContext = `\n\nDOCUMENTOS DISPONÍVEIS NO SISTEMA:\n${docList}`;
-      }
-    } catch (e) {
-      // Silenciosamente falhar se documentos não estiverem disponíveis
-    }
-    
     const chat = model.startChat({
       history: [
-        { role: "user", parts: [{ text: SYSTEM_PROMPT + documentContext }] },
+        { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
         { role: "model", parts: [{ text: "Entendido. Sou o Assistente Clovis e estou pronto para ajudar com as matrículas CFDEG." }] },
         ...history
       ],

@@ -2,7 +2,7 @@
  * Serviço de comunicação com o Google Apps Script (Middleware)
  */
 
-const APPS_SCRIPT_URL = process.env.NEXT_PUBLIC_APPS_SCRIPT_URL || process.env.APPS_SCRIPT_URL || "";
+const APPS_SCRIPT_URL = process.env.NEXT_PUBLIC_APPS_SCRIPT_URL || "";
 
 export const triggerGerarComprovante = async (payload: {
   cursistaNome: string;
@@ -56,3 +56,44 @@ export const triggerNotificarTecnico = async (payload: {
     console.error(err);
   }
 };
+
+export const triggerSalvarMatricula = async (payload: {
+  cursistaNome: string;
+  cursistaCpf: string;
+  cursistaEmail: string;
+  vinculoOrigem: string;
+  modalidadeOrigem: string;
+  turmaId: string;
+  turmaNome: string;
+  protocolo: string;
+  cursistaTelefone: string;
+  temNecessidade: string;
+  tipoDeficiencia: string;
+  necessidades: string;
+  diaSemana: string;
+  horarioIni: string;
+  turno: string;
+  anoFormativo: string;
+  componente: string;
+}) => {
+  if (!APPS_SCRIPT_URL) {
+    console.warn("URL do Apps Script não configurada.");
+    return { success: false, error: "Integração desativada" };
+  }
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify({
+        action: "SALVAR_MATRICULA",
+        payload
+      })
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erro ao chamar Apps Script:", error);
+    return { success: false, error: error.message };
+  }
+};
+

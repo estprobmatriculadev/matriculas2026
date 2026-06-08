@@ -16,12 +16,9 @@ import {
   User as UserIcon,
   ShieldCheck,
   ChevronDown,
-  Database,
-  Calendar
+  Database
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import SGMLogo from "./SGMLogo";
-import NotificationButton from "./NotificationButton";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -35,7 +32,7 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user: any) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       if (!user) {
         router.push("/login");
       } else {
@@ -46,26 +43,21 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
   }, [router]);
 
   const menuItems = [
-    { name: "Dashboard", icon: <LayoutDashboard size={20} />, path: userRole === "TUTOR" ? "/tutor" : "/dashboard" },
+    { name: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
     { name: "Documentos", icon: <FileText size={20} />, path: "/documentos" },
     { name: "Remanejamento", icon: <ArrowRightLeft size={20} />, path: userRole === "CURSISTA" ? "/remanejamento/request" : "/tecnico/remanejamento" },
   ];
 
-  if (userRole === "ADMIN" || userRole === "TECNICO") {
-    menuItems.push({ name: "Importar Dados", icon: <Database size={20} />, path: "/tecnico/import" });
+  if (userRole === "ADMIN" || userRole === "TECNICO" || userRole === "TUTOR") {
+    menuItems.push({ name: "Painel de Gestão", icon: <Settings size={20} />, path: "/tecnico/dashboard" });
   }
 
   if (userRole === "ADMIN" || userRole === "TECNICO") {
-    menuItems.push({ name: "Datas Importantes", icon: <Calendar size={20} />, path: "/admin/datas" });
+    menuItems.push({ name: "Importar Turmas", icon: <Database size={20} />, path: "/tecnico/import" });
   }
 
-  // Remover Remanejamento e Documentos para TUTOR
-  if (userRole === "TUTOR") {
-    const filteredItems = menuItems.filter(item => 
-      item.name !== "Remanejamento" && item.name !== "Documentos"
-    );
-    menuItems.length = 0;
-    menuItems.push(...filteredItems);
+  if (userRole === "ADMIN") {
+    menuItems.push({ name: "Controle de Usuários", icon: <UserIcon size={20} />, path: "/admin/users" });
   }
 
   const handleLogout = async () => {
@@ -85,25 +77,8 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
           </div>
           {isSidebarOpen && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5 text-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  {/* Livro aberto (Educação) */}
-                  <path d="M12 3v18" />
-                  <path d="M12 3L6 6v12l6-3 6 3V6L12 3Z" />
-                  {/* Estrela (Excelência) */}
-                  <circle cx="12" cy="9" r="1.5" fill="currentColor" />
-                </svg>
-                <span className="font-black text-primary text-xl tracking-tighter">SGM</span>
-              </div>
-              <span className="text-[8px] uppercase font-black text-on-surface-variant tracking-tight opacity-80 leading-tight ml-7">Matrículas e Gestão EP</span>
+              <span className="font-black text-primary text-xl tracking-tighter">SGM</span>
+              <span className="text-[9px] uppercase font-black text-on-surface-variant tracking-tight opacity-80 leading-tight">MATRÍCULAS E GESTÃO CFDEG</span>
             </motion.div>
           )}
         </div>
@@ -161,7 +136,10 @@ export default function AppLayout({ children, userRole = "CURSISTA" }: AppLayout
           </div>
 
           <div className="flex items-center gap-4">
-            <NotificationButton userId={user?.uid} />
+            <button className="p-2.5 text-on-surface-variant hover:bg-surface-container-high rounded-full relative transition-all">
+              <Bell size={20} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full border-2 border-surface-container-lowest"></span>
+            </button>
 
             <div className="h-10 w-[1px] bg-surface-border mx-2"></div>
 

@@ -2,8 +2,9 @@
 export const dynamic = "force-dynamic";
 
 
-import { useState } from "react";
-import { db } from "@/lib/firebase";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { db, auth } from "@/lib/firebase";
 import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
 import AppLayout from "@/components/AppLayout";
 import Papa from "papaparse";
@@ -16,32 +17,62 @@ import {
   Loader2, 
   Database,
   Table,
-  ArrowRight,
-  Download
+  ArrowRight
 } from "lucide-react";
-import { generateCursistasTemplate, generateTurmasTemplate, downloadCSV } from "@/services/csvTemplateService";
+import { normalizarString, syncUserSession } from "@/services/userService";
+
+const normalizeAnoFormativo = (ano: any): string => {
+  if (!ano) return "N/A";
+  const s = String(ano).toUpperCase();
+  if (s.includes("1")) return "1 ANO";
+  if (s.includes("2")) return "2 ANO";
+  if (s.includes("3")) return "3 ANO";
+  return s;
+};
+
+const determineModalidade = (item: any): string => {
+  if (item.modalidade) return String(item.modalidade).toUpperCase();
+  const curso = String(item.curso_sere || "").toUpperCase();
+  const turmaName = String(item.turma || "").toUpperCase();
+  if (curso.includes("EJA") || turmaName.includes("EJA")) return "EJA";
+  if (curso.includes("PROFISSIONAL") || curso.includes("TECNICO") || turmaName.includes("PROFISSIONAL") || turmaName.includes("TECNICO")) return "PROFISSIONAL";
+  return "REGULAR";
+};
 
 export default function ImportPage() {
+  const router = useRouter();
+  const [userRole, setUserRole] = useState<string>("TECNICO");
   const [data, setData] = useState<any[]>([]);
-  const [type, setType] = useState<"cursistas" | "turmas">("cursistas");
+  const [type, setType] = useState<"cursistas" | "turmas">("turmas");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const handleDownloadTemplate = () => {
-    let csv = "";
-    let filename = "";
-    
-    if (type === "cursistas") {
-      csv = generateCursistasTemplate();
-      filename = "template_cursistas_2026.csv";
-    } else {
-      csv = generateTurmasTemplate();
-      filename = "template_turmas_2026.csv";
-    }
-    
-    downloadCSV(csv, filename);
-  };
+  useEffect(() => {
+    const init = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      try {
+        const { role } = await syncUserSession(user);
+        if (role === "CURSISTA") {
+          router.push("/dashboard");
+          return;
+        }
+        setUserRole(role);
+        if (role === "ADMIN") {
+          setType("cursistas");
+        } else {
+          setType("turmas");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    init();
+  }, [router]);
 
   const handleFileUpload = (e: any) => {
     const file = e.target.files[0];
@@ -50,8 +81,70 @@ export default function ImportPage() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      dynamicTyping: true,
       complete: (results) => {
-        setData(results.data);
+        const rawRows = results.data;
+        const mapped = rawRows.map((row: any) => {
+          // Normalize keys to lowercase for robust mapping
+          const normalizedRow: any = {};
+          Object.keys(row).forEach(key => {
+            normalizedRow[key.toLowerCase().trim()] = row[key];
+          });
+
+          if (type === "turmas") {
+            const id_turma = String(normalizedRow.id_turma || normalizedRow.id || "").trim();
+            const turmaName = String(normalizedRow.turma || normalizedRow.nome_turma_matricula || "").trim();
+            const diaSemana = String(normalizedRow.dia || normalizedRow.dia_semana || "").trim();
+            const horarioIni = String(normalizedRow.inicio || normalizedRow.horario_ini || "").trim();
+            const cursoSere = String(normalizedRow.curso_sere || "").trim();
+
+            return {
+              id_turma: id_turma,
+              nome_turma_matricula: turmaName,
+              dia_semana: diaSemana,
+              horario_ini: horarioIni,
+              turno: String(normalizedRow.turno || "").trim(),
+              ano_formativo: normalizeAnoFormativo(normalizedRow.ano_formativo),
+              modalidade: determineModalidade(normalizedRow),
+              vagas_totais: Number(normalizedRow.vagas_totais || normalizedRow.vagas || 30),
+              vagas: Number(normalizedRow.vagas || normalizedRow.vagas_totais || 30),
+              matriculados: Number(normalizedRow.matriculados || 0),
+              formador: String(normalizedRow.formador || "A definir").trim(),
+              cod_curso: String(normalizedRow.cod_curso || "").trim(),
+              curso_sere: cursoSere,
+              cod_disciplina: String(normalizedRow.cod_disciplina || "").trim(),
+              disc_sere: String(normalizedRow.disc_sere || "").trim(),
+              componente: normalizarString(String(normalizedRow.componente || "").trim()),
+              cod_turma_sere: String(normalizedRow.cod_turma_sere || "").trim(),
+              fim: String(normalizedRow.fim || "").trim(),
+            };
+          } else {
+            // Cursistas mapping
+            const email = String(normalizedRow.emailgoogleeducation || normalizedRow.email || "").trim().toLowerCase();
+            const sanitizedRow: any = {};
+            Object.keys(row).forEach(key => {
+              const cleanedKey = key.trim();
+              const val = row[key];
+              sanitizedRow[cleanedKey] = typeof val === "string" ? normalizarString(val) : val;
+            });
+            // Ensure EmailGoogleEducation and email are set
+            if (email) {
+              sanitizedRow.email = email;
+              if (!sanitizedRow.EmailGoogleEducation) {
+                sanitizedRow.EmailGoogleEducation = email;
+              }
+            }
+            return sanitizedRow;
+          }
+        }).filter((item: any) => {
+          if (type === "turmas") {
+            return item.id_turma !== "";
+          } else {
+            return item.email && item.email !== "";
+          }
+        });
+
+        setData(mapped);
       }
     });
   };
@@ -62,9 +155,7 @@ export default function ImportPage() {
     
     try {
       data.forEach((item) => {
-        const id = type === "cursistas" 
-          ? (item.email ? item.email.toLowerCase() : `unknown_${Math.random()}`) 
-          : item.id;
+        const id = type === "cursistas" ? item.email : item.id_turma;
         const ref = doc(db, type, id);
         batch.set(ref, { 
           ...item, 
@@ -76,6 +167,7 @@ export default function ImportPage() {
       setSuccess(true);
       setData([]);
     } catch (err) {
+      console.error(err);
       setError("Erro ao importar dados. Verifique o formato do arquivo.");
     } finally {
       setLoading(false);
@@ -83,7 +175,7 @@ export default function ImportPage() {
   };
 
   return (
-    <AppLayout userRole="ADMIN">
+    <AppLayout userRole={userRole}>
       <div className="max-w-5xl mx-auto space-y-8">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -91,12 +183,14 @@ export default function ImportPage() {
             <p className="text-on-surface-variant">Atualize a base de dados via arquivo CSV.</p>
           </div>
           <div className="flex bg-surface-container p-1 rounded-2xl border border-surface-border">
-            <button 
-              onClick={() => { setType("cursistas"); setData([]); }}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${type === "cursistas" ? "bg-primary text-on-primary shadow-lg" : "text-primary hover:bg-primary/5"}`}
-            >
-              Cursistas
-            </button>
+            {userRole === "ADMIN" && (
+              <button 
+                onClick={() => { setType("cursistas"); setData([]); }}
+                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${type === "cursistas" ? "bg-primary text-on-primary shadow-lg" : "text-primary hover:bg-primary/5"}`}
+              >
+                Cursistas
+              </button>
+            )}
             <button 
               onClick={() => { setType("turmas"); setData([]); }}
               className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${type === "turmas" ? "bg-primary text-on-primary shadow-lg" : "text-primary hover:bg-primary/5"}`}
@@ -126,7 +220,7 @@ export default function ImportPage() {
                 Selecione o arquivo com as colunas padrão para importar para a coleção <span className="font-bold text-primary uppercase">{type}</span>.
               </p>
               
-              <label className="block mb-4">
+              <label className="block">
                 <span className="sr-only">Escolher arquivo</span>
                 <input 
                   type="file" 
@@ -141,13 +235,6 @@ export default function ImportPage() {
                     cursor-pointer"
                 />
               </label>
-
-              <button 
-                onClick={handleDownloadTemplate}
-                className="w-full py-2.5 px-4 bg-surface-container text-on-surface font-bold rounded-full flex items-center justify-center gap-2 hover:bg-surface-container-high transition-all text-xs"
-              >
-                <Download size={16} /> Baixar Template
-              </button>
             </div>
 
             <div className="bg-surface-container p-6 rounded-2xl border border-surface-border">

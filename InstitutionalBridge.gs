@@ -19,6 +19,14 @@ function doPost(e) {
         return ContentService.createTextOutput(JSON.stringify(notificarTecnico(data.payload)))
           .setMimeType(ContentService.MimeType.JSON);
 
+      case "SALVAR_ANEXO":
+        return ContentService.createTextOutput(JSON.stringify(salvarAnexo(data.payload)))
+          .setMimeType(ContentService.MimeType.JSON);
+
+      case "SALVAR_MATRICULA":
+        return ContentService.createTextOutput(JSON.stringify(salvarMatricula(data.payload)))
+          .setMimeType(ContentService.MimeType.JSON);
+
       default:
         return ContentService.createTextOutput(JSON.stringify({ error: "Ação não reconhecida" }))
           .setMimeType(ContentService.MimeType.JSON);
@@ -26,6 +34,19 @@ function doPost(e) {
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ error: err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function salvarAnexo(payload) {
+  try {
+    const folder = DriveApp.getFolderById(FOLDER_ID);
+    const contentType = payload.mimeType || "application/pdf";
+    const blob = Utilities.newBlob(Utilities.base64Decode(payload.base64), contentType, payload.fileName);
+    const file = folder.createFile(blob);
+    
+    return { success: true, url: file.getUrl(), id: file.getId() };
+  } catch (err) {
+    return { success: false, error: err.toString() };
   }
 }
 
@@ -73,4 +94,41 @@ function notificarTecnico(payload) {
     `Uma nova solicitação de remanejamento foi aberta.\n\nCursista: ${payload.cursistaNome}\nTurma Atual: ${payload.turmaOrigem}\nTurma Pretendida: ${payload.turmaDestino}\n\nAcesse o painel para analisar.`);
   
   return { success: true };
+}
+
+function salvarMatricula(payload) {
+  try {
+    const ss = SpreadsheetApp.openById("1pGYz2rIOllQhIETd2DUU8RZ4cV4ZO5lt8GlUDGphMSw");
+    const sheet = ss.getSheetByName("Data");
+    const agora = new Date();
+    
+    sheet.appendRow([
+      agora,
+      payload.cursistaNome || "",
+      payload.cursistaCpf || "",
+      payload.cursistaEmail || "",
+      payload.vinculoOrigem || "",
+      payload.modalidadeOrigem || "",
+      payload.turmaId || "",
+      payload.turmaNome || "",
+      payload.protocolo || "",
+      payload.cursistaTelefone || "",
+      payload.temNecessidade || "NÃO",
+      payload.tipoDeficiencia || "",
+      payload.necessidades || "",
+      "CONFIRMADA", // Status 1 / Matrícula
+      "CONFIRMADA", // Status 2
+      payload.diaSemana || "",
+      payload.horarioIni || "",
+      payload.turno || "",
+      payload.anoFormativo || "",
+      payload.componente || "",
+      "", // Col 20
+      payload.turmaNome || "" // Col 21
+    ]);
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
 }

@@ -5,7 +5,7 @@ import {
   serverTimestamp, 
   collection
 } from "firebase/firestore";
-import { triggerGerarComprovante } from "./appsScriptBridge";
+import { triggerGerarComprovante, triggerSalvarMatricula } from "./appsScriptBridge";
 
 export interface RegistrationData {
   cursistaEmail: string;
@@ -35,6 +35,11 @@ export const efetivarMatricula = async (data: RegistrationData) => {
         throw new Error("Não há vagas disponíveis para esta turma.");
       }
 
+      // Recuperar dados complementares do cursista para a planilha Google
+      const cursistaRef = doc(db, "cursistas", data.cursistaEmail.toLowerCase());
+      const cursistaDoc = await transaction.get(cursistaRef);
+      const cursistaData = cursistaDoc.exists() ? cursistaDoc.data() : {};
+
       const matriculaRef = doc(collection(db, "matriculas"));
       transaction.set(matriculaRef, {
         ...data,
@@ -52,10 +57,39 @@ export const efetivarMatricula = async (data: RegistrationData) => {
         id: matriculaRef.id, 
         turmaNome: turmaData.nome_turma_matricula,
         diaSemana: turmaData.dia_semana,
-        horarioIni: turmaData.horario_ini
+        horarioIni: turmaData.horario_ini,
+        turno: turmaData.turno || "",
+        anoFormativo: turmaData.ano_formativo || "",
+        componente: turmaData.componente || "",
+        cursistaCpf: cursistaData.Cpf || cursistaData.CPF || cursistaData.cpf || "",
+        cursistaTelefone: cursistaData.Telefone || cursistaData.TelefoneCelular || cursistaData.telefone || "",
+        vinculoOrigem: cursistaData.Vinculo || cursistaData.vinculo || "QPM",
+        modalidadeOrigem: cursistaData.modalidade || cursistaData.modalidade_calc || "DOCENTE"
       };
     });
 
+    // Enviar dados para salvar na Planilha Google
+    await triggerSalvarMatricula({
+      cursistaNome: data.cursistaNome,
+      cursistaCpf: result.cursistaCpf,
+      cursistaEmail: data.cursistaEmail,
+      vinculoOrigem: result.vinculoOrigem,
+      modalidadeOrigem: result.modalidadeOrigem,
+      turmaId: data.turmaId,
+      turmaNome: result.turmaNome,
+      protocolo: result.id,
+      cursistaTelefone: result.cursistaTelefone,
+      temNecessidade: "NÃO",
+      tipoDeficiencia: "",
+      necessidades: "",
+      diaSemana: result.diaSemana || "A definir",
+      horarioIni: result.horarioIni || "A definir",
+      turno: result.turno,
+      anoFormativo: result.anoFormativo,
+      componente: result.componente
+    });
+
+    // Gerar comprovante PDF e e-mail
     triggerGerarComprovante({
       cursistaNome: data.cursistaNome,
       cursistaEmail: data.cursistaEmail,

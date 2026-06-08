@@ -28,12 +28,16 @@ export interface RemanejamentoRequest {
 
 export const solicitarRemanejamento = async (data: any) => {
   try {
-    const sanitizedData = Object.fromEntries(
-      Object.entries(data).filter(([, value]) => value !== undefined)
-    );
+    // Remove undefined values to prevent Firestore errors
+    const cleanedData = Object.entries(data).reduce((acc: any, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
 
     const docRef = await addDoc(collection(db, "remanejamentos"), {
-      ...sanitizedData,
+      ...cleanedData,
       status: "PENDENTE",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -59,3 +63,18 @@ export const processarAprovacaoRemanejamento = async (requestId: string, adminCo
     return { success: false, error: error.message };
   }
 };
+
+export const processarSolicitacaoRemanejamento = async (requestId: string, status: "DEFERIDO" | "INDEFERIDO") => {
+  try {
+    const requestRef = doc(db, "remanejamentos", requestId);
+    await updateDoc(requestRef, {
+      status: status,
+      updatedAt: serverTimestamp()
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Erro ao processar solicitação de remanejamento:", error);
+    return { success: false, error: error.message };
+  }
+};
+
