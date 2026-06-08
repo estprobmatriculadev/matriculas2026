@@ -14,24 +14,39 @@ export interface UserVinculo {
 export const syncUserSession = async (user: User) => {
   if (!user.email) throw new Error("E-mail não fornecido pelo provedor.");
   
-  const userRef = doc(db, "users", user.email.toLowerCase());
-  const userSnap = await getDoc(userRef);
+  const emailLower = user.email.toLowerCase();
+  const userRefLower = doc(db, "users", emailLower);
+  const userSnapLower = await getDoc(userRefLower);
+
+  let role = "CURSISTA";
+  let createdAt = serverTimestamp();
+  if (userSnapLower.exists()) {
+    role = userSnapLower.data().role || "CURSISTA";
+    if (userSnapLower.data().createdAt) {
+      createdAt = userSnapLower.data().createdAt;
+    }
+  }
 
   const userData = {
     uid: user.uid,
-    email: user.email.toLowerCase(),
+    email: emailLower,
     displayName: user.displayName,
     photoURL: user.photoURL,
     lastLogin: serverTimestamp(),
+    role: role,
+    createdAt: createdAt
   };
 
-  if (!userSnap.exists()) {
-    await setDoc(userRef, { ...userData, role: "CURSISTA", createdAt: serverTimestamp() });
-    return { role: "CURSISTA" };
-  } else {
-    await setDoc(userRef, userData, { merge: true });
-    return userSnap.data() as { role: string };
+  // Sync to lowercase document
+  await setDoc(userRefLower, userData, { merge: true });
+
+  // Sync to original casing document if different to support Firestore Security Rules
+  if (user.email !== emailLower) {
+    const userRefOriginal = doc(db, "users", user.email);
+    await setDoc(userRefOriginal, userData, { merge: true });
   }
+
+  return { role };
 };
 
 export const processarPerfilCursista = (dados: any[]): UserVinculo[] => {

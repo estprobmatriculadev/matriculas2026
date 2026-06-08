@@ -51,10 +51,17 @@ export default function DocumentosPage() {
     };
     init();
 
-    const unsubscribe = onSnapshot(query(collection(db, "documentos"), orderBy("createdAt", "desc")), (snap) => {
-      setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      query(collection(db, "documentos"), orderBy("createdAt", "desc")),
+      (snap) => {
+        setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Error loading documentos:", err);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -67,12 +74,18 @@ export default function DocumentosPage() {
     e.preventDefault();
     if (!newDoc.titulo || !newDoc.url) return;
     setUploading(true);
-    await addDoc(collection(db, "documentos"), {
-      ...newDoc,
-      createdAt: serverTimestamp()
-    });
-    setNewDoc({ titulo: "", url: "", categoria: "Geral" });
-    setUploading(false);
+    try {
+      await addDoc(collection(db, "documentos"), {
+        ...newDoc,
+        createdAt: serverTimestamp()
+      });
+      setNewDoc({ titulo: "", url: "", categoria: "Geral" });
+    } catch (err: any) {
+      console.error(err);
+      alert("Erro ao publicar documento: " + err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSendMessage = async () => {

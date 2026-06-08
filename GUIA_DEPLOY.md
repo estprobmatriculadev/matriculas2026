@@ -12,30 +12,64 @@ Acesse o [Console do Firebase](https://console.firebase.google.com/) e siga esta
 ### Cloud Firestore
 *   Crie o banco de dados em **"Production Mode"**.
 *   Escolha a localização `southamerica-east1` (São Paulo) para menor latência.
-*   **Regras de Segurança (Security Rules)**: Copie e cole estas regras na aba "Rules" para proteger os dados:
+*   **Regras de Segurança (Security Rules)**: Copie e cole estas regras na aba "Rules" para proteger e estruturar todos os acessos do banco:
 
 ```firestore
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite que qualquer usuário logado com @escola leia turmas e documentos
-    match /turmas/{doc} {
-      allow read: if request.auth.token.email.endsWith('@escola.pr.gov.br');
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role in ['ADMIN', 'TECNICO'];
-    }
-    
-    // Apenas o próprio cursista ou admins podem ver sua matrícula
-    match /matriculas/{doc} {
-      allow read: if request.auth.token.email == resource.data.cursistaEmail || 
-                  get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role in ['ADMIN', 'TECNICO'];
-      allow create: if request.auth.token.email.endsWith('@escola.pr.gov.br');
-      allow update: if get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role in ['ADMIN', 'TECNICO'];
+    // Helper function to check if user has a role
+    function hasRole(roleList) {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.token.email)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role in roleList;
     }
 
-    // Regra geral para perfis
+    // Regra geral para perfis de acesso
     match /users/{email} {
-      allow read: if request.auth.token.email == email || 
-                  get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role == 'ADMIN';
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role == 'ADMIN';
+      allow read: if request.auth != null && (request.auth.token.email == email || hasRole(['ADMIN']));
+      allow write: if hasRole(['ADMIN']);
+    }
+
+    // Permite que qualquer usuário logado leia as turmas
+    match /turmas/{doc} {
+      allow read: if request.auth != null;
+      allow write: if hasRole(['ADMIN', 'TECNICO']);
+    }
+    
+    // Apenas o próprio cursista ou admins/técnicos podem ver sua matrícula
+    match /matriculas/{doc} {
+      allow read: if request.auth != null && (request.auth.token.email == resource.data.cursistaEmail || hasRole(['ADMIN', 'TECNICO']));
+      allow create: if request.auth != null;
+      allow update: if hasRole(['ADMIN', 'TECNICO']);
+    }
+
+    // Datas importantes
+    match /dates/{doc} {
+      allow read: if request.auth != null;
+      allow write: if hasRole(['ADMIN', 'TECNICO']);
+    }
+
+    // Documentos e Suporte
+    match /documentos/{doc} {
+      allow read: if request.auth != null;
+      allow write: if hasRole(['ADMIN', 'TECNICO']);
+    }
+
+    // Remanejamentos (Fila e Solicitações)
+    match /remanejamentos/{doc} {
+      allow read: if request.auth != null && (
+        request.auth.token.email == resource.data.cursistaEmail || 
+        hasRole(['ADMIN', 'TECNICO', 'TUTOR'])
+      );
+      allow create: if request.auth != null;
+      allow update, delete: if hasRole(['ADMIN', 'TECNICO']);
+    }
+
+    // Cursistas
+    match /cursistas/{doc} {
+      allow read: if request.auth != null;
+      allow write: if hasRole(['ADMIN', 'TECNICO']);
     }
   }
 }
