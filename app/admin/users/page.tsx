@@ -55,8 +55,7 @@ export default function AdminUsersPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    const init = async () => {
-      const user = auth.currentUser;
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
         router.push("/login");
         return;
@@ -71,8 +70,8 @@ export default function AdminUsersPage() {
       } catch (err) {
         console.error(err);
       }
-    };
-    init();
+    });
+    return () => unsubscribe();
   }, [router]);
 
   useEffect(() => {

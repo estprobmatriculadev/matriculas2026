@@ -36,8 +36,7 @@ export default function TecnicoDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const init = async () => {
-      const user = auth.currentUser;
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
         router.push("/login");
         return;
@@ -52,8 +51,8 @@ export default function TecnicoDashboardPage() {
       } catch (err) {
         console.error(err);
       }
-    };
-    init();
+    });
+    return () => unsubscribe();
   }, [router]);
 
   useEffect(() => {

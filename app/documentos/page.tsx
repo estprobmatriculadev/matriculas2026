@@ -42,16 +42,18 @@ export default function DocumentosPage() {
   const chatEndRef = useRef<null | HTMLDivElement>(null);
 
   useEffect(() => {
-    const init = async () => {
-      const user = auth.currentUser;
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        const { role } = await syncUserSession(user);
-        setUserRole(role);
+        try {
+          const { role } = await syncUserSession(user);
+          setUserRole(role);
+        } catch (err) {
+          console.error("Error syncing user session:", err);
+        }
       }
-    };
-    init();
+    });
 
-    const unsubscribe = onSnapshot(
+    const unsubscribeDocs = onSnapshot(
       query(collection(db, "documentos"), orderBy("createdAt", "desc")),
       (snap) => {
         setDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -63,7 +65,10 @@ export default function DocumentosPage() {
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      unsubscribeDocs();
+    };
   }, []);
 
   useEffect(() => {

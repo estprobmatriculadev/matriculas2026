@@ -49,8 +49,7 @@ export default function ImportPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const init = async () => {
-      const user = auth.currentUser;
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
         router.push("/login");
         return;
@@ -66,8 +65,8 @@ export default function ImportPage() {
       } catch (err) {
         console.error(err);
       }
-    };
-    init();
+    });
+    return () => unsubscribe();
   }, [router]);
 
   const downloadCSVTemplate = (t: "turmas" | "cursistas") => {

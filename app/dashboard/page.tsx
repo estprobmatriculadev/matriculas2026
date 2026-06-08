@@ -34,8 +34,7 @@ export default function DashboardPage() {
   const [newDateForm, setNewDateForm] = useState({ dia: "", mes: "", titulo: "", desc: "" });
 
   useEffect(() => {
-    const initializeDashboard = async () => {
-      const user = auth.currentUser;
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (!user) {
         router.push("/login");
         return;
@@ -60,16 +59,17 @@ export default function DashboardPage() {
       } finally {
         setLoading(false);
       }
-    };
-
-    initializeDashboard();
+    });
 
     // Listen to important dates
     const unsubscribeDates = onSnapshot(collection(db, "dates"), (snap) => {
       setDates(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    return () => unsubscribeDates();
+    return () => {
+      unsubscribeAuth();
+      unsubscribeDates();
+    };
   }, [router]);
 
   const handleSaveDate = async (id: string) => {

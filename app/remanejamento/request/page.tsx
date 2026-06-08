@@ -56,9 +56,11 @@ export default function RequestRemanejamentoPage() {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      const user = auth.currentUser;
-      if (!user) { router.push("/login"); return; }
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
       try {
         const { role } = await syncUserSession(user);
         setUserRole(role);
@@ -73,9 +75,13 @@ export default function RequestRemanejamentoPage() {
             atComponente: mData.turmaNome || mData.nome_turma_matricula || ""
           }));
         }
-      } catch (err) { console.error(err); } finally { setLoading(false); }
-    };
-    fetchData();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    });
+    return () => unsubscribe();
   }, [router]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

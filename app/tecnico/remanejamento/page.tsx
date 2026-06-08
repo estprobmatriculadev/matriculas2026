@@ -37,8 +37,7 @@ export default function TecnicoRemanejamentoPage() {
   const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
-    const init = async () => {
-      const user = auth.currentUser;
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
         router.push("/login");
         return;
@@ -53,8 +52,8 @@ export default function TecnicoRemanejamentoPage() {
       } catch (err) {
         console.error(err);
       }
-    };
-    init();
+    });
+    return () => unsubscribe();
   }, [router]);
 
   useEffect(() => {
