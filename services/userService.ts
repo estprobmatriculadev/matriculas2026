@@ -9,6 +9,7 @@ export interface UserVinculo {
   modalidade_calc?: string;
   ano_formativo_calc?: string;
   componente_matriz?: string;
+  nome_da_mae?: string;
 }
 
 export const syncUserSession = async (user: User) => {
@@ -65,12 +66,13 @@ export const processarPerfilCursista = (dados: any[]): UserVinculo[] => {
     else if (matriz.includes("3 ANO")) ano = "3 ANO";
 
     return {
-      DiscFuncExeNome: d.DiscFuncExeNome || "",
+      DiscFuncExeNome: d.DiscFuncExeNome || d.nome || "",
       EstabExeNome: d.EstabExeNome || "",
-      Vinculo: d.Vinculo || "",
+      Vinculo: d.Vinculo || d.vinculo || "",
       modalidade_calc: modalidade,
       ano_formativo_calc: ano,
-      componente_matriz: d.ComponenteCurricularMatriz || ""
+      componente_matriz: d.ComponenteCurricularMatriz || d.componente || "",
+      nome_da_mae: d.nome_da_mae || d.nome_mae || ""
     };
   });
 };

@@ -76,7 +76,7 @@ export default function ImportPage() {
       headers = "turma;cod_curso;curso_sere;cod_disciplina;disc_sere;componente;cod_turma_sere;ano_formativo;id_turma;turno;dia;inicio;fim\n";
       filename = "modelo_turmas.csv";
     } else {
-      headers = "user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone\n";
+      headers = "user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone;nome_da_mae\n";
       filename = "modelo_cursistas.csv";
     }
     const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });

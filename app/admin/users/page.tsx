@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
       headers = "user;nome;cpf;rg;email;telefone\n";
       filename = "modelo_users.csv";
     } else {
-      headers = "user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone\n";
+      headers = "user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone;nome_da_mae\n";
       filename = "modelo_cursistas.csv";
     }
     const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });
@@ -229,6 +229,7 @@ export default function AdminUsersPage() {
             turno_suprimento: item.turno_suprimento ? normalizarString(String(item.turno_suprimento)) : "",
             telefone: item.telefone ? String(item.telefone) : "",
             TelefoneCelular: item.telefone ? String(item.telefone) : "",
+            nome_da_mae: item.nome_da_mae ? normalizarString(String(item.nome_da_mae)) : "",
             updatedAt: serverTimestamp()
           }, { merge: true });
         });
@@ -385,7 +386,7 @@ export default function AdminUsersPage() {
               <p className="text-[10px] text-on-surface-variant mb-4 leading-relaxed">
                 {csvType === "users" 
                   ? "Importe usuários no formato de modelo_users.csv (user;nome;cpf;rg;email;telefone)." 
-                  : "Importe estudantes no formato de modelo_cursistas.csv (user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone)."
+                  : "Importe estudantes no formato de modelo_cursistas.csv (user;nome;cpf;rg;cgm;email;modalidade;componente;periodo_ini;turno_suprimento;telefone;nome_da_mae)."
                 }
               </p>
 

@@ -13,11 +13,12 @@ export interface RegistrationData {
   turmaId: string;
   fluxo: "EP" | "PEDFOR";
   EstabExeNome?: string;
-  vinculoOrigem?: string; // Adicionado para corrigir o erro de build
+  vinculoOrigem?: string;
   anoFormativo?: string;
   diaSemana?: string;
   horarioIni?: string;
   turno?: string;
+  nome_da_mae?: string;
 }
 
 export const efetivarMatricula = async (data: RegistrationData) => {
@@ -41,8 +42,10 @@ export const efetivarMatricula = async (data: RegistrationData) => {
       const cursistaData = cursistaDoc.exists() ? cursistaDoc.data() : {};
 
       const matriculaRef = doc(collection(db, "matriculas"));
+      const nomeMaeVal = cursistaData.nome_da_mae || cursistaData.nome_mae || data.nome_da_mae || "";
       transaction.set(matriculaRef, {
         ...data,
+        nome_da_mae: nomeMaeVal,
         turmaNome: turmaData.nome_turma_matricula,
         createdAt: serverTimestamp(),
         status: "CONFIRMADA"
@@ -64,7 +67,8 @@ export const efetivarMatricula = async (data: RegistrationData) => {
         cursistaCpf: cursistaData.Cpf || cursistaData.CPF || cursistaData.cpf || "",
         cursistaTelefone: cursistaData.Telefone || cursistaData.TelefoneCelular || cursistaData.telefone || "",
         vinculoOrigem: cursistaData.Vinculo || cursistaData.vinculo || "QPM",
-        modalidadeOrigem: cursistaData.modalidade || cursistaData.modalidade_calc || "DOCENTE"
+        modalidadeOrigem: cursistaData.modalidade || cursistaData.modalidade_calc || "DOCENTE",
+        cursistaNomeMae: nomeMaeVal
       };
     });
 
@@ -86,7 +90,8 @@ export const efetivarMatricula = async (data: RegistrationData) => {
       horarioIni: result.horarioIni || "A definir",
       turno: result.turno,
       anoFormativo: result.anoFormativo,
-      componente: result.componente
+      componente: result.componente,
+      cursistaNomeMae: result.cursistaNomeMae
     });
 
     // Gerar comprovante PDF e e-mail

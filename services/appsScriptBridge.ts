@@ -75,6 +75,7 @@ export const triggerSalvarMatricula = async (payload: {
   turno: string;
   anoFormativo: string;
   componente: string;
+  cursistaNomeMae: string;
 }) => {
   if (!APPS_SCRIPT_URL) {
     console.warn("URL do Apps Script não configurada.");

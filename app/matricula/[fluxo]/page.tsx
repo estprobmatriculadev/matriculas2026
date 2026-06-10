@@ -97,6 +97,7 @@ export default function MatriculaPage({ params }: PageProps) {
       turmaId: selectedTurma,
       fluxo: fluxoSolicitado,
       EstabExeNome: perfil[0].EstabExeNome,
+      nome_da_mae: perfil[0].nome_da_mae || "",
     });
 
     if (result.success) {
@@ -167,6 +168,12 @@ export default function MatriculaPage({ params }: PageProps) {
                       <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Componente</p>
                       <p className="font-bold">{perfil[0]?.componente_matriz}</p>
                     </div>
+                    {perfil[0]?.nome_da_mae && (
+                      <div className="bg-surface-container-low p-4 rounded-xl">
+                        <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Nome da Mãe</p>
+                        <p className="font-bold">{perfil[0]?.nome_da_mae}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
